@@ -176,9 +176,10 @@ nav {
   gap: 5rem;
 }
 
-.nav_logo {
-  font-size: 2rem;
-  font-weight: 800;
+.nav_logo a{
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: 1px
 }
 
 .nav_toggle-btn {
@@ -305,4 +306,100 @@ nav {
   .errorPage_container {
     width: 100%;
   }
+  .register_container {
+    padding: 3rem 2rem;
+  }
+}
+/* ===================== style for the result page ===================== */
+
+.results {
+  margin: 5rem 0;
+}
+
+.results_container {
+  display: flex;
+  flex-direction: column;
+}
+
+.result {
+  background: var(--color-gray-0);
+  border-radius: var(--radius-4);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.result_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-gray-100);
+  border: 0.5rem solid var(--color-gray-0);
+  border-radius: 1.5rem 1.5rem 0 0;
+}
+
+.result_header-image {
+  width: 10rem;
+  aspect-ratio: 1/1;
+  overflow: hidden;
+  border-radius: 50%;
+  margin: 1.5rem;
+}
+
+.result_header h4 {
+  padding: 2rem;
+}
+
+.result_list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+  padding: 2rem;
+  padding-top: 1.2rem;
+}
+
+.result_candidate {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.result_candidate-image {
+  height: 10rem;
+  aspect-ratio: 1/1;
+  overflow: hidden;
+  border-radius: 2rem;
+  flex-shrink: 0;
+}
+
+
+.result_candidate-info {
+  flex: 1;
+}
+
+.result_candidate-rating {
+  width: 12rem;
+}
+
+.result_candidate-loader {
+  background: var(--color-gray-200);
+  border-radius: var(--radius-1);
+  height: 0.6rem;
+  width: 100%;
+  overflow: hidden;
+  margin-bottom: 0.4rem;
+}
+
+.result_candidate-loader span {
+  display: block;
+  height: 100%;
+  background: var(--color-success);
+  transition: var(--transition);
+}
+
+.result_candidate-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }

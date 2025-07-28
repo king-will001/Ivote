@@ -38,9 +38,8 @@ const Navbar = () => {
           <div className={`nav_menu ${showNav ? 'show' : ''}`}>
             <NavLink to="/elections" onClick={closeNavManu}>Elections</NavLink>
             <NavLink to="/results" onClick={closeNavManu}>Results</NavLink>
-            <NavLink to="/logout" onClick={closeNavManu}>Logout</NavLink>
             <NavLink to="/about" onClick={closeNavManu}>About</NavLink>
-            <NavLink to="/register" onClick={closeNavManu}>Register</NavLink>
+            <NavLink to="/logout" onClick={closeNavManu}>Logout</NavLink>
           </div>
 
           <button className="theme_toggle-btn" onClick={changeThemeHandler}>

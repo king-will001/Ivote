@@ -55,6 +55,10 @@ const router = createBrowserRouter([
         path: "about",
         element: <About /> // Assuming you have an About component
       },
+      {
+        path: "login",
+        element: <Login />
+      },
     ],
   },
 ]);

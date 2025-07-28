@@ -78,7 +78,7 @@ const Registration = () => {
             autoComplete='new-password'
           />
 
-          <p>Already have an account? <Link to='/'>Sign in</Link></p>
+          <p>Already have an account? <Link to='/login'>Sign in</Link></p>
 
           <button type='submit' className='btn primary'>Register</button>
         </form>

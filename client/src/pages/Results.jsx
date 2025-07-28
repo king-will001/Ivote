@@ -1,9 +1,19 @@
-import React from 'react'
+import React, { useState } from 'react';
+import { elections as dummyElections } from '../Data';
+import ResultElection from '../Components/ResultElection';
 
-function Results() {
+const Results = () => {
+  const [elections, setElections] = useState(dummyElections);
+
   return (
-    <div>Results</div>
-  )
-}
+    <section className='results'>
+      <div className='container results_container'>
+        {elections.map((election) => (
+          <ResultElection key={election.id} {...election} />
+        ))}
+      </div>
+    </section>
+  );
+};
 
-export default Results
+export default Results;
