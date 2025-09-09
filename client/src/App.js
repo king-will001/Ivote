@@ -6,7 +6,7 @@ import ErrorPage from './pages/ErrorPage'; // Assuming you have an ErrorPage com
 import Registration from './pages/Registration'; // Assuming you have a Registration component
 import Results from './pages/Results'; // Assuming you have a Results component
 import Elections from './pages/Election'; // Assuming you have an Elections component
-import ElectionDetails from './pages/ElectionDetials'; // ← correct only if file name has that typo
+import ElectionDetails from './pages/ElectionDetails'; // ← correct only if file name has that typo
  // Assuming you have an ElectionDetails component
 import Congrates from './pages/Congrates'; // Assuming you have a Congrates component
 import Logout from './pages/Logout'; // Assuming you have a Logout component

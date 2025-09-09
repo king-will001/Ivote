@@ -199,6 +199,7 @@ nav {
   font-size: 2.5rem;
   font-weight: 900;
   letter-spacing: 1px;
+  border: none;
 }
 
 .nav_toggle-btn {
@@ -881,14 +882,34 @@ nav {
   margin-top: 1.2rem;
 }
 
-/* ===== Add Election Modal Styling ===== */
+/* ===== Improved Add Election Modal Styling ===== */
+.add-election-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.55); /* dark overlay */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(2px);
+}
+
 .add-election-modal .modal_content {
-  padding-top: 1.2rem;
-  padding-bottom: 1.2rem;
+  background: #fff;
+  width: 100%;
+  max-width: 600px;
+  border-radius: var(--radius-3);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+  padding: 1.5rem 2rem;
+  animation: modalFadeIn 0.3s ease-out;
   max-height: 95vh;
   overflow-y: auto;
 }
 
+/* Header */
 .add-election-modal .modal_header {
   background: var(--color-gray-primary);
   color: var(--color-gray-900);
@@ -896,16 +917,15 @@ nav {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  height: 4rem;
-  padding: 1.2rem 2rem;
-  border-bottom: 0.5rem solid var(--color-gray-100);
+  border-radius: var(--radius-3) var(--radius-3) 0 0;
+  border-bottom: 2px solid var(--color-gray-200);
 }
-
 
 .add-election-modal .modal_header h4 {
   color: var(--color-primary);
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .add-election-modal .modal_header .modal_close {
@@ -914,160 +934,342 @@ nav {
   font-size: 1.5rem;
   color: var(--color-gray-500);
   cursor: pointer;
-  transition: color 0.2s;
+  transition: transform 0.2s, color 0.2s;
 }
 .add-election-modal .modal_header .modal_close:hover {
   color: var(--color-danger);
+  transform: rotate(90deg);
 }
 
+/* Form */
 .add-election-modal form {
   display: flex;
   flex-direction: column;
-  gap: 1.3rem;
+  gap: 1.2rem;
+  margin-top: 1.2rem;
 }
 
 .add-election-modal form h6 {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.4rem;
   color: var(--color-gray-700);
 }
 
 .add-election-modal form input[type="text"],
 .add-election-modal form input[type="date"],
 .add-election-modal form input[type="time"],
+.add-election-modal form input[type="datetime-local"],
 .add-election-modal form input[type="file"],
 .add-election-modal form textarea {
   width: 100%;
-  padding: 0.8rem 1rem;
+  padding: 0.85rem 1rem;
   border-radius: var(--radius-2);
   background: var(--color-gray-100);
   color: var(--color-gray-900);
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--color-gray-300);
   font-size: 1rem;
-  transition: border-color 0.2s;
-  margin-bottom: 0.5rem;
-  resize: none;
+  transition: all 0.25s;
 }
 
 .add-election-modal form input[type="file"] {
-  padding: 0.5rem 0;
+  padding: 0.4rem 0;
   background: none;
 }
 
 .add-election-modal form input:focus,
 .add-election-modal form textarea:focus {
   border-color: var(--color-primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 110, 255, 0.15);
   outline: none;
 }
 
 .add-election-modal form textarea {
-  min-height: 4rem;
-  max-height: 10rem;
+  min-height: 5rem;
+  max-height: 12rem;
+  resize: vertical;
 }
 
-.add-election-modal .form-actions {
+/* Footer Buttons */
+.add-election-modal .modal_footer {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1.5rem;
+  margin-top: 1.8rem;
 }
 
 .add-election-modal .btn {
-  min-width: 7rem;
+  padding: 0.7rem 1.5rem;
+  border-radius: var(--radius-2);
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: background 0.25s, transform 0.15s;
 }
 
+.add-election-modal .btn.primary {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+}
+.add-election-modal .btn.primary:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+}
+
+.add-election-modal .btn {
+  background: var(--color-gray-200);
+  border: none;
+  color: var(--color-gray-700);
+}
+.add-election-modal .btn:hover {
+  background: var(--color-gray-300);
+}
+
+/* Animation */
+@keyframes modalFadeIn {
+  from {
+    transform: scale(0.95) translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Mobile */
 @media screen and (max-width: 600px) {
   .add-election-modal .modal_content {
-    padding: 1rem 0.5rem;
-    max-width: 100vw;
+    width: 95%;
+    padding: 1rem 1.2rem;
     border-radius: var(--radius-2);
   }
 }
 
-/* ===== Responsive Styles ===== */
-@media screen and (max-width: 880px) {
-  .container {
-    width: var(--container-w-sm);
-  }
 
-  nav {
-    height: 5rem;
-  }
+/* ========================= Responsive Styles ============================================= */
+/* ===== ElectionDetails Main Section ===== */
+.electionDetails {
+  margin: 6rem 0 2rem 0;
+  padding-bottom: 2rem;
+  background: var(--color-gray-0);
+  border-radius: var(--radius-3);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+}
 
-  .nav_container .nav_right {
-    gap: 3rem;
-  }
+.electionDetails {
+  background: linear-gradient(135deg, var(--color-gray-0) 80%, var(--color-primary-variant) 100%);
+}
 
-  .nav_toggle-btn {
-    display: inline-block;
-  }
+/* ===== ElectionDetails Container ===== */
+.electionDetails_container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+  background: var(--color-gray-0);
+  border-radius: var(--radius-3);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+}
 
-  .nav_menu {
-    display: none;
-    flex-direction: column;
-    background: var(--color-gray-0);
-    position: absolute;
-    top: 100%;
-    right: 0;
+/* ===== Election Header ===== */
+.electionDetails h2 {
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.electionDetails p {
+  margin-bottom: 1rem;
+  color: var(--color-gray-700);
+  font-size: 1.1rem;
+}
+
+/* ===== Election Image ===== */
+.electionDetails_image {
+  width: 100%;
+  max-width: 600px;
+  margin: 2rem auto 2rem auto;
+  border-radius: var(--radius-3);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.electionDetails_image img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: var(--radius-3);
+}
+
+/* ===== Candidates Section ===== */
+.electionDetails_candidates {
+  margin-top: 2.5rem;
+  padding: 2rem 1rem;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-2);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+
+.electionDetails_candidates h3 {
+  margin-bottom: 1.2rem;
+  color: var(--color-primary);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.candidates_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2rem;
+  margin-top: 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+/* ===== Candidate Card ===== */
+.electionCandidate {
+  background: var(--color-gray-0);
+  border-radius: var(--radius-2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 1.5rem 1rem;
+  display: flex;
+  gap: 1.2rem;
+  align-items: flex-start;
+  transition: box-shadow 0.2s;
+}
+
+.electionCandidate:hover {
+  box-shadow: 0 4px 16px rgba(15,89,150,0.12);
+}
+
+.electionCandidate_image {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+  flex-shrink: 0;
+}
+
+.electionCandidate_image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.electionCandidate h5 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.electionCandidate small {
+  display: block;
+  margin-bottom: 0.7rem;
+  color: var(--color-gray-500);
+  font-size: 0.95rem;
+}
+
+.electionCandidate p {
+  font-size: 0.95rem;
+  color: var(--color-gray-600);
+  margin-bottom: 0.5rem;
+}
+
+/* ===== Candidate Button (already present, just for reference) ===== */
+.electionCandidate_btn {
+  background: var(--color-danger);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: background 0.2s, transform 0.2s;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.electionCandidate_btn:hover {
+  background: #c0392b;
+  transform: scale(1.1);
+  color: #fff;
+}
+
+/* ===== Voters Table Section ===== */
+.voters_table_wrapper {
+  margin-top: 3rem;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-2);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+  padding: 2rem;
+  overflow-x: auto;
+}
+
+.voters_table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  background: var(--color-gray-0);
+  border-radius: var(--radius-2);
+  overflow: hidden;
+  font-size: 1rem;
+  min-width: 400px;
+}
+
+.voters_table th, .voters_table td {
+  padding: 0.8rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-gray-200);
+  white-space: nowrap;
+}
+
+@media screen and (max-width: 700px) {
+  .voters_table_wrapper {
     padding: 1rem;
-    width: 40%;
-    border-bottom: 1px solid var(--color-gray-200);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
   }
+  .voters_table {
+    font-size: 0.95rem;
+    min-width: 320px;
+  }
+  .voters_table th, .voters_table td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.95rem;
+  }
+}
 
-  .nav_menu.show {
-    display: flex;
-  }
-
-  .nav_menu a {
-    color: var(--color-primary);
-  }
-
-  .errorPage_container {
-    width: 100%;
-  }
-
-  .register_container {
-    padding: 3rem 2rem;
-  }
-
-  .results {
-    width: var(--container-w-sm);
-  }
-
-  .candidates_header {
-    width: var(--container-w-sm);
-  }
-
-  .modal_content {
-    width: var(--container-w-sm);
-    padding: 1.5rem;
-    padding-bottom: 2rem;
-    border-radius: var(--radius-2);
-  }
-
-
-  .election {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-  .election_info {
-    padding: 2rem 1.5rem;
-  }
-
-  .election_image {
-    height: 100%;
-  }
-  .election_image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center top;
-  }
-  .elections_header {
-    flex-direction: column;
-    align-items: center;
-  }
-
+/* ===== Add Candidate Button ===== */
+.add_candidate-btn {
+  background: var(--color-gray-0);
+  border: none;
+  border-radius: var(--radius-2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  width: 100%;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: box-shadow 0.2s, background 0.2s, color 0.2s;
+  margin: 0;
+}
+.add_candidate-btn:hover {
+  box-shadow: 0 4px 16px rgba(15,89,150,0.12);
+  background: var(--color-primary-variant);
+  color: #fff;
 }
