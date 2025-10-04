@@ -2,6 +2,7 @@
 import Thumbnai11 from './assets/argentina-flag.jpg';
 import Thumbnai12 from './assets/cameroon-flag.png';
 import Thumbnai13 from './assets/shutterstock-flag.webp';
+import Candidate0 from './assets/candidate1.webp';
 import Candidate1 from './assets/innocent.jpg';
 import Candidate2 from './assets/candidate2.jpg';
 import Candidate3 from './assets/candidate3.jpg';
@@ -53,10 +54,10 @@ export const candidates = [
   },
   {
     id: "c2",
-    fullName: "Nchom Ciara",
+    fullName: "Nshom Ciara",
     image: Candidate2,
     motto: "A Voice for the People",
-    voteCount: 30,
+    voteCount: 130,
     election: "e1",
   },
   {
@@ -98,6 +99,15 @@ export const candidates = [
     motto: "Fairness. Equality. Future.",
     voteCount: 130,
     election: "e2",
+  },
+  {
+    id: "c8",
+    fullName: "Mbang Mac-joel",
+    image: Candidate0,
+    motto: "Unity in Diversity",
+    voteCount: 10,
+    election: "e1",
+
   },
 ];
 

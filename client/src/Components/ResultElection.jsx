@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { candidates } from '../Data';
 import CandidateRating from '../Components/CandidateRating';
 
@@ -8,10 +9,10 @@ const ResultElection = ({ id, thumbnail, title }) => {
 
   useEffect(() => {
     const filtered = candidates.filter(candidate => candidate.election === id);
-    setElectionCandidates(filtered);
+    const sorted = [...filtered].sort((a, b) => b.voteCount - a.voteCount);
+    setElectionCandidates(sorted);
 
-    // FIXED: use voteCount instead of votes
-    const total = filtered.reduce((sum, candidate) => sum + (candidate.voteCount || 0), 0);
+    const total = sorted.reduce((sum, candidate) => sum + (candidate.voteCount || 0), 0);
     setTotalVotes(total);
   }, [id]);
 
@@ -32,9 +33,11 @@ const ResultElection = ({ id, thumbnail, title }) => {
           ))
         )}
       </ul>
+      <Link to={`/elections/${id}/candidates`} className='btn primary full'>
+        Enter Election
+      </Link>
     </article>
   );
 };
 
 export default ResultElection;
-
