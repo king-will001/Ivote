@@ -30,9 +30,15 @@ const ConfirmVote = ({ candidateId, onCancel, onConfirm }) => {
 
   return (
     <section className='modal'>
+<<<<<<< HEAD
       <div className='modal-content confirm_vote-content'>
         <h5>Please confirm your vote</h5>
         <h2>Are you sure you want to vote for {modalCandidate.fullName}?</h2>
+=======
+      <div className='modal_content confirm_vote-content'>
+        <h5>Please confirm your vote</h5>
+        <h2>Are you sure you want to vote for <span>{modalCandidate.fullName}</span>?</h2>
+>>>>>>> ec0264508e298f016f45f9009f6a6dd6b531e3d1
         <div className='confirm_vote-image'>
           <img src={modalCandidate.image} alt={modalCandidate.fullName} />
         </div>
