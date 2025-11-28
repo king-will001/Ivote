@@ -5,9 +5,18 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import ErrorPage from './pages/ErrorPage'; // Assuming you have an ErrorPage component
 import Registration from './pages/Registration'; // Assuming you have a Registration component
+<<<<<<< HEAD
 import Results from './pages/Results';
 import Elections from './pages/Elections'; // Corrected import path
+=======
+import Results from './pages/Results'; // Assuming you have a Results component
+import Elections from './pages/Election'; // Assuming you have an Elections component
+<<<<<<< HEAD
+import ElectionDetails from './pages/ElectionDetials'; // ← correct only if file name has that typo
+=======
+>>>>>>> 2e5aa0089967a98d2d40df869e7084a374843fa3
 import ElectionDetails from './pages/ElectionDetails'; // ← correct only if file name has that typo
+>>>>>>> ec0264508e298f016f45f9009f6a6dd6b531e3d1
  // Assuming you have an ElectionDetails component
 import Congrates from './pages/Congrates'; // Assuming you have a Congrates component
 import Logout from './pages/Logout'; // Assuming you have a Logout component
