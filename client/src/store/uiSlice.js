@@ -1,7 +1,16 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-const initialState = {addCandidateModalShowing: false, voteCandidateModalShowing: false, electionModalShowing: false, updateElectionModalShowing: false
-}
+/* const initialState = {addCandidateModalShowing: false, voteCandidateModalShowing: false, electionModalShowing: false, updateElectionModalShowing: false
+} */
+
+
+const initialState = {
+   addCandidateModalShowing: false,
+   updateElectionModalShowing: false,
+   voteCandidateModalShowing: false,
+   selectedElection: null,
+};
+
 
 const uiSlice = createSlice({
    name: 'ui',
@@ -25,11 +34,15 @@ const uiSlice = createSlice({
       closeElectionModal(state) {
          state.electionModalShowing = false
       },
-      openUpdateElectionModal(state) {
-         state.updateElectionModalShowing = true
+      openUpdateElectionModal(state, action) {
+         state.updateElectionModalShowing = true;
+         if (action.payload) {
+            state.selectedElection = action.payload;
+         }
       },
       closeUpdateElectionModal(state) {
-         state.updateElectionModalShowing = false
+         state.updateElectionModalShowing = false;
+         state.selectedElection = null;
       },
    }
 })

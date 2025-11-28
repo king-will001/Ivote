@@ -1,31 +1,66 @@
 import React, { useState, useEffect } from 'react';
-import { candidates } from '../Data';
-import { useDispatch } from 'react-redux';
-import { uiActions } from '../store/uiSlice';
+import { fetchCandidates, castVote } from '../utils/apiSimulator'; // Import from simulator
 
-const ConfirmVote = ({ candidateId, onCancel, onConfirm }) => {
-  const dispatch = useDispatch()
-  //close confirm vote modal
-  const closeCandidateModal = () => {
-    dispatch(uiActions.closeVoteCandidateModal())
-  }
-
+const ConfirmVote = ({ electionId, candidateId, onCancel, onConfirm }) => {
   const [modalCandidate, setModalCandidate] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isVoting, setIsVoting] = useState(false);
 
-  // Move the function inside useEffect to avoid dependency warnings
   useEffect(() => {
-    const fetchCandidate = () => {
-      const foundCandidate = candidates.find(candidate => candidate.id === candidateId);
-      if (foundCandidate) {
-        setModalCandidate(foundCandidate);
+    const getCandidate = async () => {
+      try {
+        const response = await fetchCandidates(electionId); // Fetch candidates for the specific election
+        if (response.success) {
+          const foundCandidate = response.data.find(candidate => candidate.id === candidateId);
+          if (foundCandidate) {
+            setModalCandidate(foundCandidate);
+          } else {
+            setError("Candidate not found.");
+          }
+        } else {
+          setError(response.message);
+        }
+      } catch (err) {
+        setError("Failed to fetch candidate information.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchCandidate();
-  }, [candidateId]);
+    getCandidate();
+  }, [electionId, candidateId]);
+
+  const handleConfirmVote = async () => {
+    setIsVoting(true);
+    setError(null);
+    // For now, we'll use a hardcoded voterId. In a real app, this would come from authenticated user context.
+    const voterId = "v2"; // Example: Ndanm Boseh Prince-will
+
+    try {
+      const response = await castVote(electionId, candidateId, voterId);
+      if (response.success) {
+        onConfirm(response.data); // Pass any relevant data back to parent
+      } else {
+        setError(response.message);
+      }
+    } catch (err) {
+      setError("Failed to cast vote.");
+    } finally {
+      setIsVoting(false);
+    }
+  };
+
+  if (isLoading) {
+    return <section className="modal"><div className="modal_content confirm_vote-content">Loading candidate information...</div></section>;
+  }
+
+  if (error) {
+    return <section className="modal"><div className="modal_content confirm_vote-content" style={{color: 'red'}}>Error: {error}</div></section>;
+  }
 
   if (!modalCandidate) {
-    return <p>Loading candidate information...</p>;
+    return <section className="modal"><div className="modal_content confirm_vote-content">Candidate not found.</div></section>;
   }
 
   return (
@@ -37,9 +72,12 @@ const ConfirmVote = ({ candidateId, onCancel, onConfirm }) => {
           <img src={modalCandidate.image} alt={modalCandidate.fullName} />
         </div>
         <p>{modalCandidate?.motto?.length > 50 ? modalCandidate?.motto?.substring(0, 50) + '...' : modalCandidate?.motto}</p>
+        {error && <p style={{color: 'red', marginBottom: '1rem'}}>{error}</p>}
         <div className='confirm_vote-cta'>
-          <button className='btn' onClick={onCancel}>Cancel</button>
-          <button className='btn primary' onClick={onConfirm}>Confirm Vote</button>
+          <button className='btn' onClick={onCancel} disabled={isVoting}>Cancel</button>
+          <button className='btn primary' onClick={handleConfirmVote} disabled={isVoting}>
+            {isVoting ? 'Voting...' : 'Confirm Vote'}
+          </button>
         </div>
       </div>
     </section>

@@ -1,32 +1,7 @@
 import React, { useState } from 'react';
-import ConfirmVote from './ConfirmVote';
-import { useDispatch } from 'react-redux';
-import { uiActions } from '../store/uiSlice';
-import { voteActions } from '../store/vote-slice';
+// Candidate is a presentational component; vote actions are triggered by parent
 
-const Candidate = ({ image, id, fullName, motto }) => {
-  const dispatch = useDispatch()
-
-  // open confirm vote model
-  const openCandidateModal = () => {
-    dispatch(uiActions.openVoteCandidateModal())
-    dispatch(voteActions.changeSelectedVoteCandidate(id))
-  }
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  const handleVoteClick = () => {
-    setShowConfirm(true);
-  };
-
-  const handleCancel = () => {
-    setShowConfirm(false);
-  };
-
-  const handleConfirm = () => {
-    setShowConfirm(false);
-    // TODO: Add vote confirmation logic here, e.g., dispatch Redux action or update state
-    console.log(`Vote confirmed for candidate id: ${id}`);
-  };
+const Candidate = ({ image, id, fullName, motto, onVote }) => {
 
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -72,15 +47,9 @@ const Candidate = ({ image, id, fullName, motto }) => {
         </div>
         <h5>{fullName?.length > 20 ? fullName.substring(0, 20) + '...' : fullName}</h5>
         <small>{motto?.length > 30 ? motto.substring(0, 30) + '...' : motto}</small>
-        <button className='btn primary' onClick={handleVoteClick}>Vote</button>
+        <button className='btn primary' onClick={onVote}>Vote</button>
       </article>
-      {showConfirm && (
-        <ConfirmVote
-          candidateId={id}
-          onCancel={handleCancel}
-          onConfirm={handleConfirm}
-        />
-      )}
+      {/* ConfirmVote is rendered by the page (Candidates) using global UI/vote state */}
     </>
   );
 };

@@ -1,36 +1,65 @@
-import React, { useState } from 'react';
-import { candidates as dummyCandidates } from '../Data';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchCandidates } from '../utils/apiSimulator';
+import { uiActions } from '../store/uiSlice';
 import CandidateCard from '../Components/Candidate';
 import ConfirmVote from '../Components/ConfirmVote';
-import { useSelector } from 'react-redux';
 
 const Candidates = () => {
-  const { id } = useParams(); // ✅ Define first
-  console.log('Candidates Page Loaded', id); // ✅ Use after
+  const { id: electionId } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
+  const [candidates, setCandidates] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
 
-  const voteCandidateModalShowing = useSelector(
-    (state) => state.ui.voteCandidateModalShowing
-  );
+  const voteCandidateModalShowing = useSelector((state) => state.ui.voteCandidateModalShowing);
 
-  const candidates = dummyCandidates.filter(
-    (candidate) => candidate.election === id
-  );
+  useEffect(() => {
+    const getCandidates = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetchCandidates(electionId);
+        if (response.success) {
+          setCandidates(response.data);
+        } else {
+          setError(response.message);
+        }
+      } catch (err) {
+        setError("Failed to fetch candidates.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    getCandidates();
+  }, [electionId]);
 
   const handleVoteClick = (candidateId) => {
     setSelectedCandidateId(candidateId);
+    dispatch(uiActions.openVoteCandidateModal());
   };
 
   const handleCancel = () => {
     setSelectedCandidateId(null);
+    dispatch(uiActions.closeVoteCandidateModal());
   };
 
   const handleConfirm = () => {
-    console.log(`Vote confirmed for candidate ID: ${selectedCandidateId}`);
     setSelectedCandidateId(null);
+    dispatch(uiActions.closeVoteCandidateModal());
+    navigate('/congrates'); // Redirect after successful vote
   };
+
+  if (isLoading) {
+    return <section className="candidates"><div className="container">Loading candidates...</div></section>;
+  }
+
+  if (error) {
+    return <section className="candidates"><div className="container" style={{color: 'red'}}>Error: {error}</div></section>;
+  }
 
   return (
     <>
@@ -60,6 +89,7 @@ const Candidates = () => {
 
       {voteCandidateModalShowing && selectedCandidateId && (
         <ConfirmVote
+          electionId={electionId}
           candidateId={selectedCandidateId}
           onCancel={handleCancel}
           onConfirm={handleConfirm}

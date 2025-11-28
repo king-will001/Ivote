@@ -1,11 +1,12 @@
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import RootLayout from './pages/RootLayout';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import ErrorPage from './pages/ErrorPage'; // Assuming you have an ErrorPage component
 import Registration from './pages/Registration'; // Assuming you have a Registration component
-import Results from './pages/Results'; // Assuming you have a Results component
-import Elections from './pages/Election'; // Assuming you have an Elections component
+import Results from './pages/Results';
+import Elections from './pages/Elections'; // Corrected import path
 import ElectionDetails from './pages/ElectionDetails'; // ← correct only if file name has that typo
  // Assuming you have an ElectionDetails component
 import Congrates from './pages/Congrates'; // Assuming you have a Congrates component
@@ -22,7 +23,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Login />
+        element: <Home />
       },
       {
         path: "register",

@@ -1,20 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { candidates } from '../Data';
 import CandidateRating from '../Components/CandidateRating';
 
-const ResultElection = ({ id, thumbnail, title }) => {
-  const [electionCandidates, setElectionCandidates] = useState([]);
-  const [totalVotes, setTotalVotes] = useState(0);
-
-  useEffect(() => {
-    const filtered = candidates.filter(candidate => candidate.election === id);
-    const sorted = [...filtered].sort((a, b) => b.voteCount - a.voteCount);
-    setElectionCandidates(sorted);
-
-    const total = sorted.reduce((sum, candidate) => sum + (candidate.voteCount || 0), 0);
-    setTotalVotes(total);
-  }, [id]);
+const ResultElection = ({ id, thumbnail, title, candidates, totalVotes }) => {
+  // Sort candidates by vote count in descending order
+  const sortedCandidates = [...candidates].sort((a, b) => b.voteCount - a.voteCount);
 
   return (
     <article className='result'>
@@ -25,10 +15,10 @@ const ResultElection = ({ id, thumbnail, title }) => {
         </div>
       </header>
       <ul className='result_list'>
-        {electionCandidates.length === 0 ? (
+        {sortedCandidates.length === 0 ? (
           <li>No candidates found.</li>
         ) : (
-          electionCandidates.map(candidate => (
+          sortedCandidates.map(candidate => (
             <CandidateRating key={candidate.id} {...candidate} totalVotes={totalVotes} />
           ))
         )}

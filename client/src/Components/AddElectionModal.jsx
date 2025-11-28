@@ -1,40 +1,79 @@
-import React, { useState, useEffect } from 'react';
-import { AiOutlineClose } from 'react-icons/ai';
+import React, { useState } from 'react';
+import { IoMdClose } from 'react-icons/io';
+import { createElection } from '../utils/apiSimulator';
+import classes from './AddElectionModal.module.css'; // Import CSS module
 
-const AddElectionModal = ({ onClose, onSubmit }) => {
+const AddElectionModal = ({ onClose = () => {}, onElectionAdded = () => {} }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [endDateTime, setEndDateTime] = useState(""); // 👈 new state
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [thumbnail, setThumbnail] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (onSubmit) {
-      onSubmit({ title, description, date, time, endDateTime, thumbnail });
+    setError(null);
+    setIsLoading(true);
+
+    // Basic client-side validation
+    if (!title.trim() || !description.trim() || !startDate || !endDate || !thumbnail) {
+      setError("All fields are required.");
+      setIsLoading(false);
+      return;
     }
-    // Reset
-    setTitle("");
-    setDescription("");
-    setDate("");
-    setTime("");
-    setEndDateTime("");
-    setThumbnail(null);
-    onClose();
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (end <= start) {
+      setError("End date and time must be after the start date and time.");
+      setIsLoading(false);
+      return;
+    }
+
+    const newElection = {
+      title,
+      description,
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      thumbnail: thumbnail ? URL.createObjectURL(thumbnail) : null,
+    };
+
+    try {
+      const response = await createElection(newElection);
+      if (response.success) {
+        onElectionAdded(response.data);
+        // Reset form
+        setTitle("");
+        setDescription("");
+        setStartDate("");
+        setEndDate("");
+        setThumbnail(null);
+        onClose();
+      } else {
+        setError(response.message);
+      }
+    } catch (err) {
+      setError("Failed to create election.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <section className='modal add-election-modal' role="dialog" aria-modal="true">
-      <div className='modal_content'>
-        <header className='modal_header'>
+    <section className={classes.modalOverlay} role="dialog" aria-modal="true">
+      <div className={classes.modalContent}>
+          <header className={classes.modalHeader}>
           <h4>Create New Election</h4>
-          <button className='modal_close' onClick={onClose} aria-label="Close modal">
-            <AiOutlineClose />
+          <button className={classes.modalCloseButton} onClick={onClose} aria-label="Close modal" disabled={isLoading} type="button">
+            <IoMdClose />
           </button>
         </header>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className={classes.modalForm}>
+          {error && <p style={{color: 'red', marginBottom: '1rem'}}>{error}</p>}
           <div>
             <h6>Election Title:</h6>
             <input
@@ -42,6 +81,7 @@ const AddElectionModal = ({ onClose, onSubmit }) => {
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              disabled={isLoading}
             />
           </div>
 
@@ -51,36 +91,29 @@ const AddElectionModal = ({ onClose, onSubmit }) => {
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              disabled={isLoading}
             />
           </div>
 
           <div>
-            <h6>Start Date:</h6>
+            <h6>Start Date & Time:</h6>
             <input
-              type='date'
+              type='datetime-local'
               required
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              disabled={isLoading}
             />
           </div>
-
-          <div>
-            <h6>Start Time:</h6>
-            <input
-              type='time'
-              required
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-            />
-          </div>
-
+          
           <div>
             <h6>End Date & Time:</h6>
             <input
               type='datetime-local'
               required
-              value={endDateTime}
-              onChange={(e) => setEndDateTime(e.target.value)}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              disabled={isLoading}
             />
           </div>
 
@@ -91,12 +124,15 @@ const AddElectionModal = ({ onClose, onSubmit }) => {
               accept="image/*"
               required
               onChange={(e) => setThumbnail(e.target.files[0])}
+              disabled={isLoading}
             />
           </div>
 
-          <div className="modal_footer">
-            <button type='button' className='btn' onClick={onClose}>Cancel</button>
-            <button type='submit' className='btn primary'>Create Election</button>
+          <div className={classes.modalFooter}>
+            <button type='button' className='btn' onClick={onClose} disabled={isLoading}>Cancel</button>
+            <button type='submit' className='btn primary' disabled={isLoading}>
+              {isLoading ? 'Creating...' : 'Create Election'}
+            </button>
           </div>
         </form>
       </div>

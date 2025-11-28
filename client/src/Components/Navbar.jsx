@@ -33,9 +33,10 @@ const Navbar = () => {
   return (
     <nav>
       <div className="container nav_container">
-        <Link to="/" className='nav_logo'>IvoTe</Link>
+        <Link to="/elections" className='nav_logo' onClick={closeNavManu}>IvoTe</Link>
         <div className="nav_right">
           <div className={`nav_menu ${showNav ? 'show' : ''}`}>
+            <NavLink to="/" onClick={closeNavManu}>News</NavLink>
             <NavLink to="/elections" onClick={closeNavManu}>Elections</NavLink>
             <NavLink to="/results" onClick={closeNavManu}>Results</NavLink>
             <NavLink to="/about" onClick={closeNavManu}>About</NavLink>
