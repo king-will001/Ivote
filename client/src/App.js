@@ -1,28 +1,16 @@
-
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import RootLayout from './pages/RootLayout';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import ErrorPage from './pages/ErrorPage'; // Assuming you have an ErrorPage component
-import Registration from './pages/Registration'; // Assuming you have a Registration component
-<<<<<<< HEAD
+import ErrorPage from './pages/ErrorPage';
+import Registration from './pages/Registration';
 import Results from './pages/Results';
-import Elections from './pages/Elections'; // Corrected import path
-=======
-import Results from './pages/Results'; // Assuming you have a Results component
-import Elections from './pages/Election'; // Assuming you have an Elections component
-<<<<<<< HEAD
-import ElectionDetails from './pages/ElectionDetials'; // ← correct only if file name has that typo
-=======
->>>>>>> 2e5aa0089967a98d2d40df869e7084a374843fa3
-import ElectionDetails from './pages/ElectionDetails'; // ← correct only if file name has that typo
->>>>>>> ec0264508e298f016f45f9009f6a6dd6b531e3d1
- // Assuming you have an ElectionDetails component
-import Congrates from './pages/Congrates'; // Assuming you have a Congrates component
-import Logout from './pages/Logout'; // Assuming you have a Logout component
-import Candidates from './pages/Candidates'; // Assuming you have a Candidates component
-import About from './pages/About'; // Assuming you have an About component
-
+import Elections from './pages/Elections';
+import ElectionDetails from './pages/ElectionDetails';
+import Congrates from './pages/Congrates';
+import Logout from './pages/Logout';
+import Candidates from './pages/Candidates';
+import About from './pages/About';
 
 const router = createBrowserRouter([
   {
@@ -30,54 +18,20 @@ const router = createBrowserRouter([
     element: <RootLayout />,
     errorElement: <ErrorPage />,
     children: [
-      {
-        index: true,
-        element: <Home />
-      },
-      {
-        path: "register",
-        element: <Registration /> // Assuming you have a Register component
-      },
-      {
-        path: "results",
-        element: <Results /> // Assuming you have a Results component
-      },
-      {
-        path: "elections",
-        element: <Elections /> // Assuming you have an Elections component
-      },
-      {
-        path: "elections/:id",
-        element: <ElectionDetails /> // Assuming you have an ElectionDetails component
-      },
-      {
-        path: "elections/:id/candidates",
-        element: <Candidates /> // Assuming you have a Candidates component
-      },
-      {
-        path: "congrates",
-        element: <Congrates /> // Assuming you have a Congrates component
-      },
-      {
-        path: "logout",
-        element: <Logout /> // Assuming you have a Logout component
-      },
-      {
-        path: "about",
-        element: <About /> // Assuming you have an About component
-      },
-      {
-        path: "login",
-        element: <Login />
-      },
+      { index: true, element: <Home /> },
+      { path: "register", element: <Registration /> },
+      { path: "results", element: <Results /> },
+      { path: "elections", element: <Elections /> },
+      { path: "elections/:id", element: <ElectionDetails /> },
+      { path: "elections/:id/candidates", element: <Candidates /> },
+      { path: "congrates", element: <Congrates /> },
+      { path: "logout", element: <Logout /> },
+      { path: "about", element: <About /> },
+      { path: "login", element: <Login /> }
     ],
   },
 ]);
 
-
-
-function App() {
-  return (<RouterProvider router={router} />);
+export default function App() {
+  return <RouterProvider router={router} />;
 }
-
-export default App;

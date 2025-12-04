@@ -10,7 +10,7 @@ const notFound = (req, res, next) => {
 
 // Error malddleware
 const errorHandler = (error, req, res, next) => {
-    if(res.headersent) {
+    if (res.headersSent) {
         return next(error);
     }
 
