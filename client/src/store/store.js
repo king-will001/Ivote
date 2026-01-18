@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
-import uiReducer from "./uiSlice"; // ✅ Import the default reducer directly
-import voteSlice from "./vote-slice";
+import uiReducer from "./uiSlice";
+import voteReducer from "./vote-slice";
 
 const store = configureStore({
-  reducer: { ui: uiReducer, vote: voteSlice.reducer } // ✅ This now works!
+  reducer: { ui: uiReducer, vote: voteReducer }
 });
 
 export default store;

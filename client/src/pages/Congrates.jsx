@@ -6,10 +6,25 @@ function Congrates() {
   return (
     <section className='congrats'>
       <div className='container congrats_container'>
-        <img src={congrat1} alt="Congratulation" />
-        <h2>Thanks for your vote!</h2>
-        <p>Your vote is now added to your candidate's vote count. You can now vote for another candidate in a different post.</p>
-        <Link to='/results' className='btn sm primary'>See Results</Link>
+        <div className='congrats_copy'>
+          <span className='congrats_kicker'>Vote submitted</span>
+          <h2>Thank you for voting</h2>
+          <p>
+            Your ballot has been recorded successfully. You can now view the live
+            results or return to explore other elections.
+          </p>
+          <div className='congrats_actions'>
+            <Link to='/results' className='btn primary'>View Results</Link>
+            <Link to='/elections' className='btn'>Back to Elections</Link>
+          </div>
+        </div>
+
+        <div className='congrats_media'>
+          <div className='congrats_media-frame'>
+            <img src={congrat1} alt="Vote submitted" />
+          </div>
+          <p className='congrats_media-caption'>Ballot confirmation complete.</p>
+        </div>
       </div>
     </section>
   );

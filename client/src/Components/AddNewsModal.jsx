@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { IoMdClose } from 'react-icons/io';
-import { createNews } from '../utils/apiSimulator';
+import { createNews, NEWS_CATEGORIES } from '../utils/apiSimulator';
 import classes from './AddElectionModal.module.css'; // Re-use styles from AddElectionModal
 
 const AddNewsModal = ({ onClose, onNewsAdded }) => {
+  const categoryOptions = NEWS_CATEGORIES.length ? NEWS_CATEGORIES : ["Tech"];
   const [title, setTitle] = useState('');
+  const [category, setCategory] = useState(categoryOptions[0]);
   const [content, setContent] = useState('');
   const [mediaType, setMediaType] = useState('none');
   const [mediaUrl, setMediaUrl] = useState('');
@@ -60,6 +62,11 @@ const AddNewsModal = ({ onClose, onNewsAdded }) => {
       return;
     }
 
+    if (!category || !category.trim()) {
+      setError('Category is required.');
+      return;
+    }
+
     if (mediaType !== 'none' && !mediaUrl) {
       setError('Please provide a media URL or upload an image.');
       return;
@@ -74,6 +81,7 @@ const AddNewsModal = ({ onClose, onNewsAdded }) => {
 
     const newPost = { 
       title, 
+      category,
       content, 
       author: 'Admin',
       mediaType: mediaType === 'none' ? null : mediaType,
@@ -113,6 +121,20 @@ const AddNewsModal = ({ onClose, onNewsAdded }) => {
         <form onSubmit={handleSubmit} className={classes.modalForm}>
           {error && <p style={{ color: 'red' }}>{error}</p>}
           <div>
+            <h6>Category</h6>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              disabled={isLoading}
+            >
+              {categoryOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
             <h6>Title</h6>
             <input
               type="text"
@@ -143,7 +165,7 @@ const AddNewsModal = ({ onClose, onNewsAdded }) => {
             >
               <option value="none">No media</option>
               <option value="image">Image</option>
-              <option value="embed">Embed (YouTube/URL)</option>
+              <option value="embed">Embed (YouTube/Vimeo/URL)</option>
             </select>
 
             {mediaType === 'image' && (
@@ -182,7 +204,7 @@ const AddNewsModal = ({ onClose, onNewsAdded }) => {
                   type="text"
                   value={mediaUrl}
                   onChange={handleMediaUrlChange}
-                  placeholder="Enter YouTube URL or website link"
+                  placeholder="Enter YouTube, Vimeo, or other embed URL"
                   disabled={isLoading}
                 />
               </div>

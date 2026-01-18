@@ -1,5 +1,6 @@
 // utils/apiSimulator.js
 // This file simulates API calls for client-side development without a real backend.
+// News endpoints call the real API so posts persist.
 
 // Import images so the bundler can process them
 import argentinaFlag from '../assets/argentina-flag.jpg';
@@ -14,7 +15,133 @@ import candidate5 from '../assets/candidate5.jpg';
 import candidate6 from '../assets/candidate6.jpg';
 import candidate7 from '../assets/candidate7.jpg';
 
-const simulateDelay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const parsedDelay = Number(process.env.REACT_APP_SIMULATED_DELAY_MS);
+const SIMULATED_DELAY_MS = Number.isFinite(parsedDelay) ? parsedDelay : 0;
+const simulateDelay = (ms = SIMULATED_DELAY_MS) => (
+  ms > 0 ? new Promise(resolve => setTimeout(resolve, ms)) : Promise.resolve()
+);
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+export const NEWS_CATEGORIES = ["Tech", "Health", "Education"];
+
+const getStoredToken = () => {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = JSON.parse(localStorage.getItem("user"));
+    return stored?.token || null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const normalizeNewsCategory = (value) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const match = NEWS_CATEGORIES.find(
+    (category) => category.toLowerCase() === trimmed.toLowerCase()
+  );
+  return match || trimmed;
+};
+
+const normalizeSearchValue = (value) => {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  return trimmed ? trimmed.toLowerCase() : "";
+};
+
+const buildNewsSearchText = (post) => (
+  [
+    post?.title,
+    post?.content,
+    post?.author,
+    post?.category,
+    post?.description,
+    post?.summary,
+    post?.body,
+    post?.sourceUrl,
+    post?.mediaUrl,
+  ]
+    .map(normalizeSearchValue)
+    .filter(Boolean)
+    .join(" ")
+);
+
+const normalizeNewsItem = (post) => {
+  if (!post) return post;
+  return {
+    ...post,
+    id: post.id || post._id || post.sourceUrl || post.url || post.title,
+    date: post.date || post.createdAt,
+    category: normalizeNewsCategory(post.category),
+    searchText: buildNewsSearchText(post),
+  };
+};
+
+const normalizeElectionTimes = (election) => {
+  if (!election) return election;
+  const startTime = election.startTime ?? election.startDate ?? null;
+  const endTime = election.endTime ?? election.endDate ?? null;
+  const date = election.date ?? (startTime ? String(startTime).split('T')[0] : null);
+  return { ...election, startTime, endTime, date };
+};
+
+const defaultThumbnail = shutterstockFlag;
+const apiUploadsPrefix = `${API_BASE_URL}/uploads/`;
+
+const normalizeThumbnail = (value, fallbackThumbnail) => {
+  if (typeof value !== "string" || !value.trim()) {
+    return fallbackThumbnail || null;
+  }
+  const trimmed = value.trim();
+  if (trimmed.startsWith("data:") || trimmed.startsWith("http")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/uploads/")) {
+    return `${API_BASE_URL}${trimmed}`;
+  }
+  if (trimmed.startsWith(apiUploadsPrefix)) {
+    return trimmed;
+  }
+  return trimmed;
+};
+
+const normalizeElection = (election, fallbackThumbnail = defaultThumbnail) => {
+  if (!election) return election;
+  const normalized = normalizeElectionTimes(election);
+  return {
+    ...normalized,
+    id: normalized.id || normalized._id,
+    thumbnail: normalizeThumbnail(normalized.thumbnail, fallbackThumbnail),
+  };
+};
+
+const normalizeCandidate = (candidate) => {
+  if (!candidate) return candidate;
+  const fullName =
+    candidate.fullName ||
+    [candidate.firstName, candidate.lastName].filter(Boolean).join(" ").trim();
+  const normalizedImage = normalizeThumbnail(candidate.image, candidate.image || null);
+  return {
+    ...candidate,
+    id: candidate.id || candidate._id,
+    fullName,
+    voteCount: candidate.voteCount ?? candidate.votesCount ?? 0,
+    image: normalizedImage,
+  };
+};
+
+const buildElectionPayload = (election) => {
+  if (!election || typeof election !== "object") return {};
+  const { thumbnail, id, _id, candidates, voters, ...payload } = election;
+  if (typeof thumbnail === "string" && thumbnail.trim()) {
+    payload.thumbnail = thumbnail.trim();
+  }
+  return payload;
+};
+
+const isMongoId = (value) => (
+  typeof value === "string" && /^[a-f\d]{24}$/i.test(value)
+);
 
 let electionsData = [
   {
@@ -24,8 +151,9 @@ let electionsData = [
     thumbnail: argentinaFlag,
     candidates: ["c1", "c2", "c8"],
     voters: [],
-    startDate: "2025-01-01T08:00",
-    endDate: "2025-01-31T18:00",
+    startTime: "2025-01-01T08:00",
+    endTime: "2025-01-31T18:00",
+    date: "2025-01-01",
   },
   {
     id: "e2",
@@ -34,8 +162,9 @@ let electionsData = [
     thumbnail: cameroonFlag,
     candidates: ["c5", "c6", "c7"],
     voters: [],
-    startDate: "2025-02-15T09:00",
-    endDate: "2025-03-15T17:00",
+    startTime: "2025-02-15T09:00",
+    endTime: "2025-03-15T17:00",
+    date: "2025-02-15",
   },
   {
     id: "e3",
@@ -44,8 +173,9 @@ let electionsData = [
     thumbnail: shutterstockFlag,
     candidates: ["c3", "c4"],
     voters: [],
-    startDate: "2025-04-01T10:00",
-    endDate: "2025-04-30T16:00",
+    startTime: "2025-04-01T10:00",
+    endTime: "2025-04-30T16:00",
+    date: "2025-04-01",
   },
 ];
 
@@ -159,87 +289,82 @@ let votersData = [
   },
 ];
 
-// ✅ Updated news section with media support
-let newsDB = [
-  {
-    id: 1,
-    title: "Important Update: New Voting Security Features",
-    content:
-      "We're excited to announce enhanced security features for our e-voting platform. These updates include two-factor authentication, improved encryption, and real-time vote verification.",
-    author: "System Admin",
-    date: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-    mediaType: "embed",
-    mediaUrl: "https://www.youtube.com/watch?v=w3_0x6oaDmI",
-  },
-  {
-    id: 2,
-    title: "Election Day Guidelines",
-    content:
-      "Please review these important guidelines for the upcoming election day. Make sure to have your voter ID ready and verify your registration status before voting.",
-    author: "Election Officer",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    mediaType: "image",
-    mediaUrl: "https://images.unsplash.com/photo-1593113630400-ea4288922497?q=80&w=1000&auto=format&fit=crop",
-  },
-  {
-    id: 3,
-    title: "Official Voting Process Documentation",
-    content:
-      "Access our comprehensive guide on the voting process, including step-by-step instructions and frequently asked questions.",
-    author: "Documentation Team",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-    mediaType: "embed",
-    mediaUrl: "https://www.electoralcommission.org",
-  },
-  {
-    id: 4,
-    title: "Meet the Candidates Series",
-    content:
-      "Watch our exclusive interviews with all presidential candidates as they share their visions and plans for the future.",
-    author: "Media Team",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    mediaType: "embed",
-    mediaUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  },
-  {
-    id: 5,
-    title: "Voter Registration Statistics",
-    content:
-      "We've achieved a record-breaking number of registered voters this year! Check out the detailed statistics and demographic breakdown.",
-    author: "Analytics Department",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
-    mediaType: "image",
-    mediaUrl: "https://images.unsplash.com/photo-1494172961521-33799ddd43a5?q=80&w=1000&auto=format&fit=crop",
-  },
-  {
-    id: 6,
-    title: "System Maintenance Notice",
-    content:
-      "The e-voting platform will undergo scheduled maintenance this weekend. Service will be temporarily unavailable from Saturday 2 AM to 4 AM.",
-    author: "Tech Support",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), // 3 days ago
-    mediaType: null,
-    mediaUrl: null,
-  }
-];
-
 export const fetchNews = async () => {
-  await simulateDelay(500);
-  return { success: true, data: newsDB.sort((a, b) => new Date(b.date) - new Date(a.date)) };
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/news`);
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return { success: false, message: payload.message || "Failed to load news feed" };
+    }
+
+    const items = Array.isArray(payload.news) ? payload.news.map(normalizeNewsItem) : [];
+    return { success: true, data: items };
+  } catch (error) {
+    return { success: false, message: error.message || "Failed to load news feed" };
+  }
 };
 
 export const createNews = async (newPost) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const post = {
-        id: Date.now(),
-        ...newPost,
-        date: new Date().toISOString(),
-      };
-      newsDB = [post, ...newsDB];
-      resolve({ success: true, data: post });
-    }, 500);
-  });
+  try {
+    const token = getStoredToken();
+    const response = await fetch(`${API_BASE_URL}/api/news`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(newPost),
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return { success: false, message: payload.message || "Failed to create news post" };
+    }
+
+    return { success: true, data: normalizeNewsItem(payload.post) };
+  } catch (error) {
+    return { success: false, message: error.message || "Failed to create news post" };
+  }
+};
+
+export const fetchNewsById = async (postId) => {
+  if (!postId) {
+    return { success: false, message: "News post ID is required." };
+  }
+  const response = await fetchNews();
+  if (!response.success) {
+    return response;
+  }
+  const match = response.data.find((post) => String(post.id) === String(postId));
+  if (!match) {
+    return { success: false, message: "News post not found." };
+  }
+  return { success: true, data: match };
+};
+
+export const deleteNews = async (postId) => {
+  if (!postId) {
+    return { success: false, message: "News post ID is required." };
+  }
+  try {
+    const token = getStoredToken();
+    const response = await fetch(`${API_BASE_URL}/api/news/${postId}`, {
+      method: "DELETE",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return { success: false, message: payload.message || "Failed to delete news post" };
+    }
+
+    return { success: true, data: payload };
+  } catch (error) {
+    return { success: false, message: error.message || "Failed to delete news post" };
+  }
 };
 
 // ==============================
@@ -247,40 +372,140 @@ export const createNews = async (newPost) => {
 // ==============================
 
 export const fetchElections = async () => {
-  await simulateDelay(500);
-  return { success: true, data: electionsData };
+  try {
+    const token = getStoredToken();
+    const response = await fetch(`${API_BASE_URL}/api/elections`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return { success: false, message: payload.message || "Failed to fetch elections" };
+    }
+
+    const items = Array.isArray(payload.elections) ? payload.elections : [];
+    return { success: true, data: items.map((election) => normalizeElection(election)) };
+  } catch (error) {
+    console.error("Error fetching elections:", error);
+    return { success: false, message: "Failed to fetch elections. Make sure the backend server is running." };
+  }
 };
 
 export const fetchElectionById = async (id) => {
-  await simulateDelay(500);
-  const election = electionsData.find(e => e.id === id);
-  if (election) {
-    const electionCandidates = candidatesData.filter(c => election.candidates.includes(c.id));
-    return { success: true, data: { ...election, candidates: electionCandidates } };
+  try {
+    const token = getStoredToken();
+    const response = await fetch(`${API_BASE_URL}/api/elections/${id}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return { success: false, message: payload.message || "Election not found" };
+    }
+
+    const election = payload.election;
+    const normalizedElection = normalizeElection(election);
+    const electionCandidates = Array.isArray(election?.candidates)
+      ? election.candidates.map(normalizeCandidate)
+      : [];
+    return {
+      success: true,
+      data: {
+        ...normalizedElection,
+        candidates: electionCandidates,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching election:", error);
+    return { success: false, message: "Failed to fetch election. Make sure the backend server is running." };
   }
-  return { success: false, message: "Election not found" };
 };
 
 export const createElection = async (newElection) => {
-  await simulateDelay(500);
-  const id = `e${electionsData.length + 1}`;
-  const electionWithId = { ...newElection, id, candidates: [], voters: [] };
-  electionsData.push(electionWithId);
-  return { success: true, data: electionWithId };
+  try {
+    const token = getStoredToken();
+    const payload = buildElectionPayload(newElection);
+    const response = await fetch(`${API_BASE_URL}/api/elections`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return { success: false, message: result.message || "Failed to create election" };
+    }
+
+    const normalizedElection = normalizeElection(result.election, newElection?.thumbnail);
+    const electionWithId = {
+      ...normalizedElection,
+      candidates: normalizedElection?.candidates || [],
+      voters: normalizedElection?.voters || [],
+    };
+    electionsData.push(electionWithId);
+    return { success: true, data: electionWithId };
+  } catch (error) {
+    return { success: false, message: error.message || "Failed to create election" };
+  }
 };
 
 export const updateElection = async (updatedElection) => {
-  await simulateDelay(500);
-  const index = electionsData.findIndex(e => e.id === updatedElection.id);
+  const normalizedUpdate = normalizeElectionTimes(updatedElection);
+  const electionId = String(normalizedUpdate?.id || "");
+
+  if (isMongoId(electionId)) {
+    try {
+      const token = getStoredToken();
+      const payload = buildElectionPayload(normalizedUpdate);
+      const response = await fetch(`${API_BASE_URL}/api/elections/${electionId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        return { success: false, message: result.message || "Failed to update election" };
+      }
+
+      const normalizedElection = normalizeElection(result.election, updatedElection?.thumbnail);
+      const index = electionsData.findIndex(e => String(e.id) === String(normalizedElection?.id));
+      if (index !== -1) {
+        electionsData[index] = normalizeElectionTimes({
+          ...electionsData[index],
+          ...normalizedElection,
+        });
+      }
+      return { success: true, data: normalizedElection };
+    } catch (error) {
+      return { success: false, message: error.message || "Failed to update election" };
+    }
+  }
+
+  await simulateDelay();
+  const index = electionsData.findIndex(e => e.id === normalizedUpdate.id);
   if (index !== -1) {
-    electionsData[index] = { ...electionsData[index], ...updatedElection };
+    electionsData[index] = normalizeElectionTimes({
+      ...electionsData[index],
+      ...normalizedUpdate,
+    });
     return { success: true, data: electionsData[index] };
   }
   return { success: false, message: "Election not found" };
 };
 
 export const deleteElection = async (id) => {
-  await simulateDelay(500);
+  await simulateDelay();
   const initialLength = electionsData.length;
   electionsData = electionsData.filter(e => e.id !== id);
   if (electionsData.length < initialLength) {
@@ -291,38 +516,158 @@ export const deleteElection = async (id) => {
 };
 
 export const fetchCandidates = async (electionId = null) => {
-  await simulateDelay(500);
   if (electionId) {
-    return { success: true, data: candidatesData.filter(c => c.election === electionId) };
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/elections/${electionId}/candidates`);
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        return { success: false, message: payload.message || "Failed to fetch candidates" };
+      }
+
+      const items = Array.isArray(payload.candidates) ? payload.candidates : [];
+      return { success: true, data: items.map(normalizeCandidate) };
+    } catch (error) {
+      console.error("Error fetching candidates:", error);
+      return { success: false, message: "Failed to fetch candidates. Make sure the backend server is running." };
+    }
   }
-  return { success: true, data: candidatesData };
+  return { success: false, message: "Election ID is required" };
 };
 
 export const fetchVoters = async (electionId) => {
-  await simulateDelay(500);
   if (!electionId) {
     return { success: false, message: "Election ID is required." };
   }
-  const votersForElection = votersData.filter(voter => 
-    voter.votedElections.includes(electionId)
-  );
-  return { success: true, data: votersForElection };
+  try {
+    const token = getStoredToken();
+    const response = await fetch(`${API_BASE_URL}/api/elections/${electionId}/voters`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return { success: false, message: payload.message || "Failed to fetch voters" };
+    }
+
+    const items = Array.isArray(payload.voters) ? payload.voters : [];
+    return { success: true, data: items };
+  } catch (error) {
+    console.error("Error fetching voters:", error);
+    return { success: false, message: "Failed to fetch voters. Make sure the backend server is running." };
+  }
 };
 
 export const createCandidate = async (newCandidate) => {
-  await simulateDelay(500);
+  const electionId = String(newCandidate?.election || "");
+  if (isMongoId(electionId)) {
+    try {
+      const token = getStoredToken();
+      const response = await fetch(`${API_BASE_URL}/api/elections/${electionId}/candidates`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ ...newCandidate, election: electionId }),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        return { success: false, message: result.message || "Failed to add candidate" };
+      }
+
+      const normalizedCandidate = normalizeCandidate(result.candidate || result.data || result);
+      if (normalizedCandidate) {
+        const exists = candidatesData.find(c => String(c.id) === String(normalizedCandidate.id));
+        if (!exists) {
+          candidatesData.push(normalizedCandidate);
+        }
+        const electionIndex = electionsData.findIndex(e => String(e.id) === String(electionId));
+        if (electionIndex !== -1) {
+          const currentCandidates = Array.isArray(electionsData[electionIndex].candidates)
+            ? electionsData[electionIndex].candidates
+            : [];
+          if (!currentCandidates.includes(normalizedCandidate.id)) {
+            electionsData[electionIndex].candidates = [...currentCandidates, normalizedCandidate.id];
+          }
+        }
+      }
+      return { success: true, data: normalizedCandidate };
+    } catch (error) {
+      return { success: false, message: error.message || "Failed to add candidate" };
+    }
+  }
+
+  await simulateDelay();
   const id = `c${candidatesData.length + 1}`;
-  const candidateWithId = { ...newCandidate, id, voteCount: 0 };
+  const candidateWithId = normalizeCandidate({ ...newCandidate, id, voteCount: 0 });
   candidatesData.push(candidateWithId);
   const electionIndex = electionsData.findIndex(e => e.id === newCandidate.election);
   if (electionIndex !== -1) {
-    electionsData[electionIndex].candidates.push(id);
+    const currentCandidates = Array.isArray(electionsData[electionIndex].candidates)
+      ? electionsData[electionIndex].candidates
+      : [];
+    electionsData[electionIndex].candidates = [...currentCandidates, id];
   }
   return { success: true, data: candidateWithId };
 };
 
 export const castVote = async (electionId, candidateId, voterId) => {
-  await simulateDelay(500);
+  if (isMongoId(electionId)) {
+    try {
+      const token = getStoredToken();
+      const response = await fetch(`${API_BASE_URL}/api/elections/${electionId}/votes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ candidateId, voterId }),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        return { success: false, message: payload.message || "Failed to cast vote" };
+      }
+
+      const normalizedCandidate = normalizeCandidate(payload.candidate || payload.data?.candidate || payload.vote?.candidate);
+      if (normalizedCandidate) {
+        const index = candidatesData.findIndex(c => String(c.id) === String(normalizedCandidate.id));
+        if (index !== -1) {
+          candidatesData[index] = { ...candidatesData[index], ...normalizedCandidate };
+        }
+      }
+
+      return { success: true, data: payload.vote || payload.data || payload };
+    } catch (error) {
+      return { success: false, message: error.message || "Failed to cast vote" };
+    }
+  }
+
+  await simulateDelay();
+  const election = electionsData.find(e => e.id === electionId);
+  if (!election) {
+    return { success: false, message: "Election not found" };
+  }
+
+  const normalizedElection = normalizeElectionTimes(election);
+  if (normalizedElection.startTime && normalizedElection.endTime) {
+    const start = new Date(normalizedElection.startTime);
+    const end = new Date(normalizedElection.endTime);
+    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+      const now = new Date();
+      if (now < start) {
+        return { success: false, message: "Voting has not started yet." };
+      }
+      if (now > end) {
+        return { success: false, message: "Voting has ended." };
+      }
+    }
+  }
+
   const voter = votersData.find(v => v.id === voterId);
   if (!voter) {
     return { success: false, message: "Voter not found" };
@@ -343,29 +688,65 @@ export const castVote = async (electionId, candidateId, voterId) => {
 };
 
 export const fetchResults = async () => {
-  await simulateDelay(500);
-  const results = electionsData.map(election => {
-    const electionCandidates = candidatesData.filter(c => election.candidates.includes(c.id));
-    const totalVotes = electionCandidates.reduce((sum, c) => sum + c.voteCount, 0);
-    return {
-      id: election.id,
-      title: election.title,
-      thumbnail: election.thumbnail,
-      totalVotes,
-      candidates: electionCandidates.map(c => ({
-        id: c.id,
-        fullName: c.fullName,
-        image: c.image,
-        voteCount: c.voteCount,
-        percentage: totalVotes > 0 ? (c.voteCount / totalVotes) * 100 : 0,
-      })),
-    };
-  });
-  return { success: true, data: results };
+  try {
+    const token = getStoredToken();
+    const response = await fetch(`${API_BASE_URL}/api/elections`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return { success: false, message: payload.message || "Failed to fetch results" };
+    }
+
+    const items = Array.isArray(payload.elections) ? payload.elections : [];
+    const results = items.map((election) => {
+      const normalizedElection = normalizeElection(election);
+      const candidates = Array.isArray(election?.candidates)
+        ? election.candidates.map(normalizeCandidate)
+        : [];
+      const totalVotes = candidates.reduce((sum, c) => sum + (c.voteCount ?? 0), 0);
+      return {
+        id: normalizedElection.id,
+        title: normalizedElection.title,
+        thumbnail: normalizedElection.thumbnail,
+        totalVotes,
+        candidates,
+        startTime: normalizedElection.startTime,
+        endTime: normalizedElection.endTime,
+      };
+    });
+
+    return { success: true, data: results };
+  } catch (error) {
+    await simulateDelay();
+    const results = electionsData.map(election => {
+      const electionCandidates = candidatesData.filter(c => election.candidates.includes(c.id));
+      const totalVotes = electionCandidates.reduce((sum, c) => sum + c.voteCount, 0);
+      return {
+        id: election.id,
+        title: election.title,
+        thumbnail: election.thumbnail,
+        totalVotes,
+        candidates: electionCandidates.map(c => ({
+          id: c.id,
+          fullName: c.fullName,
+          image: c.image,
+          voteCount: c.voteCount,
+          percentage: totalVotes > 0 ? (c.voteCount / totalVotes) * 100 : 0,
+        })),
+        startTime: election.startTime,
+        endTime: election.endTime,
+      };
+    });
+    return { success: true, data: results };
+  }
 };
 
 export const loginUser = async (email, password) => {
-  await simulateDelay(500);
+  await simulateDelay();
   const user = votersData.find(v => v.email === email && v.password === password);
   if (user) {
     return { success: true, data: { ...user, token: "mock-jwt-token" } };
@@ -374,7 +755,7 @@ export const loginUser = async (email, password) => {
 };
 
 export const registerUser = async (newUser) => {
-  await simulateDelay(500);
+  await simulateDelay();
   const existingUser = votersData.find(v => v.email === newUser.email);
   if (existingUser) {
     return { success: false, message: "User with this email already exists" };
@@ -383,4 +764,74 @@ export const registerUser = async (newUser) => {
   const userWithId = { ...newUser, id, isAdmin: false, votedElections: [] };
   votersData.push(userWithId);
   return { success: true, data: userWithId };
+};
+// ===== Analytics APIs =====
+
+export const fetchDashboardStats = async () => {
+  const token = getStoredToken();
+  if (!token) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/analytics/dashboard`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to fetch dashboard stats" };
+    }
+
+    return { success: true, data: data.data };
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    return { success: false, message: error.message };
+  }
+};
+
+export const fetchElectionStats = async (electionId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/analytics/elections/${electionId}/stats`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to fetch election stats" };
+    }
+
+    return { success: true, data: data.data };
+  } catch (error) {
+    console.error("Error fetching election stats:", error);
+    return { success: false, message: error.message };
+  }
+};
+
+export const fetchLiveResults = async (electionId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/analytics/elections/${electionId}/live-results`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to fetch live results" };
+    }
+
+    return { success: true, data: data.data };
+  } catch (error) {
+    console.error("Error fetching live results:", error);
+    return { success: false, message: error.message };
+  }
 };

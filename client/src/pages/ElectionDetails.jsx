@@ -1,54 +1,57 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { elections, candidates, voters } from '../Data'
-import { useParams } from 'react-router-dom'
+import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import ElectionCandidate from '../Components/ElectionCandidate'
 import { IoAddOutline } from 'react-icons/io5'
 import { useDispatch, useSelector } from 'react-redux'
 import { uiActions } from '../store/uiSlice'
 import AddCandidateModal from '../Components/AddCandidateModal'
+import { UserContext } from '../context/userContext'
+import { fetchElectionById, fetchVoters } from '../utils/apiSimulator'
+import ConfirmVote from '../Components/ConfirmVote'
+import Loader from '../Components/Loader'
 
-// ConfirmVote modal component (centered)
-const ConfirmVote = ({ candidate, onClose, onConfirm }) => {
-  if (!candidate) return null
-  const node = (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'rgba(0,0,0,0.18)',
-        zIndex: 2000,
-        padding: 20,
-      }}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div style={{ width: 420, maxWidth: '100%', background: '#fff', borderRadius: 16, padding: 28, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', textAlign: 'center' }}>
-        <h2 style={{ color: '#2563eb', fontWeight: 700, marginBottom: 8 }}>PLEASE CONFIRM YOUR VOTE</h2>
-        <h3 style={{ fontWeight: 700, marginBottom: 12, fontSize: 18 }}>ARE YOU SURE YOU WANT TO VOTE FOR <span style={{ color: '#2563eb' }}>{candidate.fullName?.toUpperCase()}</span>?</h3>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
-          <img src={candidate.image} alt={candidate.fullName} style={{ width: 260, height: 220, objectFit: 'cover', borderRadius: 12 }} />
-        </div>
-        <p style={{ color: '#333', marginBottom: 18 }}>{candidate.motto}</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 18 }}>
-          <button onClick={onClose} style={{ border: '1px solid #111', background: '#fff', padding: '10px 24px', borderRadius: 8 }}>Cancel</button>
-          <button onClick={() => onConfirm(candidate.id)} style={{ background: '#2563eb', color: '#fff', padding: '10px 24px', borderRadius: 8, border: 'none' }}>Confirm Vote</button>
-        </div>
-      </div>
-    </div>
-  )
-  return createPortal(node, document.body)
-}
+const formatDateTime = (value) => {
+  if (!value) return "TBD";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "TBD";
+  return date.toLocaleString();
+};
+
+const LIVE_POLL_INTERVAL_MS = 8000;
+
+const getVotingStatus = (startTime, endTime) => {
+  if (!startTime || !endTime) {
+    return { label: "Voting schedule not set", canVote: true };
+  }
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return { label: "Voting schedule not set", canVote: true };
+  }
+  const now = new Date();
+  if (now < start) {
+    return { label: "Voting has not started yet", canVote: false };
+  }
+  if (now > end) {
+    return { label: "Voting has ended", canVote: false };
+  }
+  return { label: "Voting is open", canVote: true };
+};
 
 const ElectionDetails = () => {
   const sectionRef = useRef(null)
   const { id } = useParams()
+  const navigate = useNavigate()
   const dispatch = useDispatch()
+  const { currentUser } = useContext(UserContext)
+  const isAdmin = currentUser?.isAdmin || currentUser?.voter?.isAdmin
   const [showVoteConfirm, setShowVoteConfirm] = useState(false)
-  const [selectedCandidate, setSelectedCandidate] = useState(null)
+  const [selectedCandidateId, setSelectedCandidateId] = useState(null)
+  const [currentElection, setCurrentElection] = useState(null)
+  const [electionCandidates, setElectionCandidates] = useState([])
+  const [electionVoters, setElectionVoters] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // lock body scroll while modal open
   useEffect(() => {
@@ -77,21 +80,130 @@ const ElectionDetails = () => {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Find current election
-  const currentElection = elections.find(
-    election => String(election.id) === String(id)
-  )
+  // Refetch election data (used after mutations and live polling)
+  const refetchElectionData = useCallback(async ({ silent = false } = {}) => {
+    try {
+      const electionPromise = fetchElectionById(id)
+      const votersPromise = isAdmin
+        ? fetchVoters(id)
+        : Promise.resolve({ success: true, data: [] })
+      const [electionResponse, votersResponse] = await Promise.all([
+        electionPromise,
+        votersPromise,
+      ])
+      if (!electionResponse.success) {
+        if (!silent) {
+          setError(electionResponse.message || "Failed to refetch election.")
+        }
+        return
+      }
 
-  // Filter candidates for this election
-  const electionCandidates = candidates.filter(
-    candidate => String(candidate.election) === String(id)
-  )
+      const electionData = electionResponse.data
+      setCurrentElection(electionData)
+      setElectionCandidates(Array.isArray(electionData?.candidates) ? electionData.candidates : [])
+
+      if (isAdmin) {
+        setElectionVoters(
+          votersResponse.success ? (Array.isArray(votersResponse.data) ? votersResponse.data : []) : []
+        )
+      } else {
+        setElectionVoters([])
+      }
+    } catch (err) {
+      if (!silent) {
+        setError("Failed to refetch election data.")
+      }
+    }
+  }, [id, isAdmin])
+
+  useEffect(() => {
+    let isActive = true
+
+    const loadElection = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const electionPromise = fetchElectionById(id)
+        const votersPromise = isAdmin
+          ? fetchVoters(id)
+          : Promise.resolve({ success: true, data: [] })
+        const [electionResponse, votersResponse] = await Promise.all([
+          electionPromise,
+          votersPromise,
+        ])
+        if (!isActive) return
+
+        if (!electionResponse.success) {
+          setCurrentElection(null)
+          setElectionCandidates([])
+          setElectionVoters([])
+          setError(electionResponse.message || "Election not found.")
+          return
+        }
+
+        const electionData = electionResponse.data
+        setCurrentElection(electionData)
+        setElectionCandidates(Array.isArray(electionData?.candidates) ? electionData.candidates : [])
+
+        if (isAdmin) {
+          if (!isActive) return
+          setElectionVoters(
+            votersResponse.success ? (Array.isArray(votersResponse.data) ? votersResponse.data : []) : []
+          )
+        } else {
+          setElectionVoters([])
+        }
+      } catch (err) {
+        if (!isActive) return
+        setError("Failed to fetch election.")
+      } finally {
+        if (!isActive) return
+        setIsLoading(false)
+      }
+    }
+
+    loadElection()
+    return () => { isActive = false }
+  }, [id, isAdmin])
+
+  useEffect(() => {
+    if (!id) return
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'hidden') return
+      refetchElectionData({ silent: true })
+    }, LIVE_POLL_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [id, refetchElectionData])
 
   const addCandidateModalShowing = useSelector(state => state.ui.addCandidateModalShowing)
+
+  if (isLoading) {
+    return (
+      <section className="electionDetails">
+        <div className="container">
+          <Loader label="Loading election..." size="lg" fullPage />
+        </div>
+      </section>
+    )
+  }
+
+  if (error) {
+    return <section className="electionDetails"><div className="container" style={{color: 'red'}}>Error: {error}</div></section>
+  }
 
   if (!currentElection) {
     return <p>Election not found.</p>
   }
+
+  const votingStatus = getVotingStatus(
+    currentElection.startTime,
+    currentElection.endTime
+  );
+  const totalVotesFromCandidates = electionCandidates.reduce((sum, candidate) => {
+    const count = Number(candidate?.voteCount ?? 0)
+    return Number.isFinite(count) ? sum + count : sum
+  }, 0)
+  const totalVotes = isAdmin ? electionVoters.length : totalVotesFromCandidates
 
 // open add candidate modal
   const openModal = () => {
@@ -101,14 +213,39 @@ const ElectionDetails = () => {
 
 
 
+  const handleDeleteCandidate = (candidateId) => {
+    // placeholder delete: filter out locally (Data is static here)
+    // In real app dispatch action or call API
+    // eslint-disable-next-line no-console
+    console.log('Delete candidate', candidateId)
+  }
+
   return (
     <>
       <section ref={sectionRef} className='electionDetails reveal-on-scroll'>
       <div className='container electionDetails_container'>
         <h2>{currentElection.title}</h2>
         <p>{currentElection.description}</p>
-        <p><strong>Date:</strong> {currentElection.date}</p>
-        <p><strong>Time:</strong> {currentElection.time}</p>
+        <p><strong>Starts:</strong> {formatDateTime(currentElection.startTime)}</p>
+        <p><strong>Ends:</strong> {formatDateTime(currentElection.endTime)}</p>
+        <p><strong>Status:</strong> {votingStatus.label}</p>
+
+        <div className='electionDetails_stats'>
+          <div className='electionDetails_stat'>
+            <span>Total votes</span>
+            <strong>{totalVotes}</strong>
+          </div>
+          <div className='electionDetails_stat'>
+            <span>Candidates</span>
+            <strong>{electionCandidates.length}</strong>
+          </div>
+          {isAdmin && (
+            <div className='electionDetails_stat'>
+              <span>Voters</span>
+              <strong>{electionVoters.length}</strong>
+            </div>
+          )}
+        </div>
 
         <div className='electionDetails_image'>
           <img src={currentElection.thumbnail} alt={currentElection.title} />
@@ -121,75 +258,93 @@ const ElectionDetails = () => {
               <ElectionCandidate
                 key={candidate.id}
                 {...candidate}
-                onDelete={(candidateId) => {
-                  // placeholder delete: filter out locally (Data is static here)
-                  // In real app dispatch action or call API
-                  // eslint-disable-next-line no-console
-                  console.log('Delete candidate', candidateId)
-                }}
+                canVote={votingStatus.canVote}
+                onDelete={isAdmin ? handleDeleteCandidate : undefined}
                 onVote={(candidateId) => {
-                  const c = electionCandidates.find(x => x.id === candidateId)
-                  setSelectedCandidate(c || null)
+                  if (!votingStatus.canVote) {
+                    return;
+                  }
+                  setSelectedCandidateId(candidateId)
                   setShowVoteConfirm(true)
                 }}
               />
             ))}
-            <li>
-              <button className='add_candidate-btn' onClick={openModal}>
-                <IoAddOutline />
-              </button>
-            </li>
+            {isAdmin && (
+              <li className="add_candidate-item">
+                <button className='add_candidate-btn' onClick={openModal}>
+                  <IoAddOutline />
+                </button>
+              </li>
+            )}
           </ul>
         </div>
 
         <div className='voters_table_wrapper'>
           <h2>Voters</h2>
-          <table className='voters_table'>
-            <thead>
-              <tr>
-                <th>Full Name</th>
-                <th>Email Address</th>
-                <th>Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {voters.map((voter, idx) => (
-                <tr key={idx}>
-                  <td><h5>{voter.fullName}</h5></td>
-                  <td>{voter.email}</td>
-                  <td>{voter.time ?? "N/A"}</td>
+          {isAdmin ? (
+            <table className='voters_table'>
+              <thead>
+                <tr>
+                  <th>Full Name</th>
+                  <th>Email Address</th>
+                  <th>Time</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {electionVoters.length === 0 && (
+                  <tr>
+                    <td colSpan={3}>No voters yet.</td>
+                  </tr>
+                )}
+                {electionVoters.map((voter, idx) => {
+                  const fullName =
+                    voter?.fullName ||
+                    `${voter?.firstName || ""} ${voter?.lastName || ""}`.trim() ||
+                    "Unknown"
+                  return (
+                    <tr key={voter?.id || voter?._id || idx}>
+                      <td><h5>{fullName}</h5></td>
+                    <td>{voter?.email || "N/A"}</td>
+                    <td>{voter?.time ? formatDateTime(voter.time) : "N/A"}</td>
+                  </tr>
+                )
+              })}
+              </tbody>
+            </table>
+          ) : (
+            <p className='voters_table_notice'>Only admins can view the voter list.</p>
+          )}
         </div>
       </div>
     </section>
 
-  {addCandidateModalShowing && (
+  {isAdmin && addCandidateModalShowing && (
     <AddCandidateModal
       elections={[currentElection]}
       onClose={() => dispatch(uiActions.closeAddCandidateModal())}
       onAddCandidate={(payload) => {
-        // TODO: replace this with a real API/store dispatch to save the candidate
-        // For now we log and close the modal via the onClose handler above
-        // Example: dispatch(candidatesActions.addCandidate(payload))
-        // eslint-disable-next-line no-console
-        console.log('AddCandidate payload', payload)
+        if (!payload) {
+          return
+        }
+        // Refetch election data to ensure we have the latest candidate list
+        refetchElectionData()
       }}
     />
   )}
-  {showVoteConfirm && selectedCandidate && (
+  {showVoteConfirm && selectedCandidateId && (
     <ConfirmVote
-      candidate={selectedCandidate}
-      onClose={() => { setShowVoteConfirm(false); setSelectedCandidate(null) }}
-      onConfirm={(candidateId) => {
-        // TODO: integrate real vote logic (call API, update UI)
-        // For now just close modal and log
-        // eslint-disable-next-line no-console
-        console.log('Confirmed vote for', candidateId)
+      electionId={id}
+      candidateId={selectedCandidateId}
+      onCancel={() => {
         setShowVoteConfirm(false)
-        setSelectedCandidate(null)
+        setSelectedCandidateId(null)
+      }}
+      onConfirm={() => {
+        // Refetch election data after vote to update vote counts and voters list
+        refetchElectionData()
+        setShowVoteConfirm(false)
+        setSelectedCandidateId(null)
+        navigate('/congrates')
       }}
     />
   )}

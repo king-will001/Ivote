@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 // Candidate is a presentational component; vote actions are triggered by parent
 
-const Candidate = ({ image, id, fullName, motto, onVote }) => {
+const Candidate = ({ image, id, fullName, motto, onVote, canVote = true }) => {
 
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -47,7 +47,13 @@ const Candidate = ({ image, id, fullName, motto, onVote }) => {
         </div>
         <h5>{fullName?.length > 20 ? fullName.substring(0, 20) + '...' : fullName}</h5>
         <small>{motto?.length > 30 ? motto.substring(0, 30) + '...' : motto}</small>
-        <button className='btn primary' onClick={onVote}>Vote</button>
+        <button
+          className='btn primary'
+          onClick={() => canVote && onVote && onVote(id)}
+          disabled={!canVote}
+        >
+          {canVote ? 'Vote' : 'Voting Closed'}
+        </button>
       </article>
       {/* ConfirmVote is rendered by the page (Candidates) using global UI/vote state */}
     </>

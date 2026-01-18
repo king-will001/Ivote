@@ -21,6 +21,8 @@ export const elections = [
     thumbnail: Thumbnai11,
     candidates: ["c1", "c2"], // Only candidates with election: "e1"
     voters: [],
+    startTime: "2025-01-01T08:00",
+    endTime: "2025-01-31T18:00",
   },
   {
     id: "e2",
@@ -30,6 +32,8 @@ export const elections = [
     thumbnail: Thumbnai12,
     candidates: ["c5", "c6", "c7"],
     voters: [],
+    startTime: "2025-02-15T09:00",
+    endTime: "2025-03-15T17:00",
   },
   {
     id: "e3",
@@ -39,6 +43,8 @@ export const elections = [
     thumbnail: Thumbnai13,
     candidates: ["c3", "c4"],
     voters: [],
+    startTime: "2025-04-01T10:00",
+    endTime: "2025-04-30T16:00",
   },
 ];
 
@@ -153,4 +159,12 @@ export const voters = [
     isAdmin: false,
     votedElections: ["e3", "e1"],
   },
+  {
+  "firstName": "Ndanm",
+  "lastName": "prince",
+  "email": "ndanm@gmail.com",
+  "password": "675882112As",
+  "passwordConfirm": "675882112As"
+},
+
 ];

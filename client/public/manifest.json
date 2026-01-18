@@ -1,0 +1,9 @@
+{
+  "short_name": "IvoTe",
+  "name": "IvoTe",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#d6252b",
+  "background_color": "#ffffff",
+  "icons": []
+}

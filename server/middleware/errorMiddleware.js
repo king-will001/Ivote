@@ -8,7 +8,7 @@ const notFound = (req, res, next) => {
 
 
 
-// Error malddleware
+// Error middleware
 const errorHandler = (error, req, res, next) => {
     if (res.headersSent) {
         return next(error);
@@ -18,8 +18,4 @@ const errorHandler = (error, req, res, next) => {
 }
 
 
-module.exports = {
-    notFound,
-    errorHandler
-
-}
+module.exports = {notFound, errorHandler};
