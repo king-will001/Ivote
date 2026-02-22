@@ -1,23 +1,46 @@
 import React from 'react'
 import { IoMdTrash } from 'react-icons/io'
 
-const ElectionCandidate = ({ fullName, image, motto, id, onDelete, onVote }) => {
+const ElectionCandidate = ({
+  fullName,
+  image,
+  motto,
+  id,
+  onDelete,
+  onVote,
+  isDeleting = false,
+}) => {
   return (
     <li className="electionCandidate">
       <div className="electionCandidate_image">
-        <img src={image} alt={fullName} />
+        <img src={image} alt={fullName} loading="lazy" decoding="async" />
       </div>
-      <div>
+      <div className="electionCandidate_info">
         <h5>{fullName}</h5>
         <small>
           {motto?.length > 80 ? motto.slice(0, 80) + "..." : motto}
         </small>
-        <p>Candidate ID: {id}</p>
-        <div style={{ display: 'flex', gap: '0.6rem', marginTop: 8 }}>
-          <button className="electionCandidate_btn" onClick={() => onDelete && onDelete(id)} style={{ background: '#ef4444', color: '#fff', borderRadius: '50%', width: 36, height: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-            <IoMdTrash />
-          </button>
-          <button onClick={() => onVote && onVote(id)} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontWeight: 600 }}>
+        <div className="electionCandidate_id">
+          <span>Candidate ID</span>
+          <span>{id}</span>
+        </div>
+        <div className="electionCandidate_actions">
+          {onDelete && (
+            <button
+              className="electionCandidate_btn"
+              onClick={() => onDelete(id)}
+              aria-label={`Delete ${fullName}`}
+              type="button"
+              disabled={isDeleting}
+            >
+              <IoMdTrash />
+            </button>
+          )}
+          <button
+            className="btn primary electionCandidate_vote"
+            onClick={() => onVote && onVote(id)}
+            type="button"
+          >
             Vote
           </button>
         </div>

@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 
-const currentVoter = { id: 'v1', token: 'sfsdfdfsd', isAdmin: true };
+const currentVoter = { id: 'v1', isAdmin: true };
 const initialState = {
   selectedVoteCandidate: '',
   currentVoter,

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 
 const isValidUrl = (string) => {
@@ -22,16 +23,47 @@ const getYouTubeEmbedUrl = (url) => {
     : null;
 };
 
-const NewsPost = ({ title, content, author, date, mediaUrl, mediaType }) => {
+const buildExcerpt = (value, maxLength = 220) => {
+  if (!value || typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  const clipped = trimmed.slice(0, maxLength);
+  return `${clipped.replace(/\s+\S*$/, '')}…`;
+};
+
+const NewsPost = ({
+  id,
+  title,
+  content,
+  summary,
+  author,
+  date,
+  mediaUrl,
+  mediaType,
+  category,
+}) => {
   const [imageError, setImageError] = useState(false);
-  const timeAgo = formatDistanceToNow(new Date(date), { addSuffix: true });
+  const publishedAt = date ? new Date(date) : null;
+  const timeAgo =
+    publishedAt && !Number.isNaN(publishedAt.getTime())
+      ? formatDistanceToNow(publishedAt, { addSuffix: true })
+      : 'Recently';
+  const headingId = title ? `news-${title.replace(/\s+/g, '-')}` : undefined;
+  const excerpt = useMemo(
+    () => buildExcerpt(summary || content || ''),
+    [summary, content]
+  );
+  const detailPath = id ? `/news/${id}` : null;
   
   const renderMedia = () => {
     if (!mediaUrl) return null;
     
     if (mediaType === 'image' && !imageError) {
       return (
-        <div className="news_post-media">
+        <div
+          className="news_post-media news_post-media--image"
+          style={mediaUrl ? { '--news-image': `url("${mediaUrl}")` } : undefined}
+        >
           <img 
             src={mediaUrl} 
             alt={title || 'News post image'}
@@ -79,14 +111,34 @@ const NewsPost = ({ title, content, author, date, mediaUrl, mediaType }) => {
   };
 
   return (
-    <article className="news_post" aria-labelledby={`news-${title?.replace(/\s+/g, '-')}`}>
+    <article className="news_post" aria-labelledby={headingId}>
       <div className="news_post-content">
-        {title && <h3 id={`news-${title.replace(/\s+/g, '-')}`}>{title}</h3>}
+        <div className="news_post-header">
+          {category && (
+            <span className="news_post-tag" data-category={category}>
+              {category}
+            </span>
+          )}
+        </div>
+        {title && detailPath ? (
+          <h3 id={headingId}>
+            <Link to={detailPath}>{title}</Link>
+          </h3>
+        ) : (
+          title && <h3 id={headingId}>{title}</h3>
+        )}
         {renderMedia()}
-        <p>{content}</p>
+        {excerpt && <p>{excerpt}</p>}
+        {detailPath && (
+          <Link className="news_post-link" to={detailPath}>
+            Read full story
+          </Link>
+        )}
         <footer className="news_post-meta">
-          <span className="author">Posted by {author}</span>
-          <time dateTime={date} className="timestamp">{timeAgo}</time>
+          <span className="author">Posted by {author || 'Admin'}</span>
+          <time dateTime={publishedAt ? publishedAt.toISOString() : undefined} className="timestamp">
+            {timeAgo}
+          </time>
         </footer>
       </div>
     </article>

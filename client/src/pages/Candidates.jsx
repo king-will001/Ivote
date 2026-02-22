@@ -21,6 +21,7 @@ const Candidates = () => {
   useEffect(() => {
     const getCandidates = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const response = await fetchCandidates(electionId);
         if (response.success) {
@@ -65,11 +66,28 @@ const Candidates = () => {
     <>
       <section className='candidates'>
         <header className='candidates_header'>
-          <h1>Vote a candidate</h1>
-          <p>
-            Choose your favorite candidate. You can vote for one candidate per election.
-            The candidate with the most votes will win the election.
-          </p>
+          <div className='candidates_title'>
+            <span className='candidates_kicker'>Ballot access</span>
+            <h1>Vote a candidate</h1>
+            <p className='candidates_lead'>
+              Choose your preferred candidate. Each verified voter can cast one vote per
+              election. Final results are published once voting ends.
+            </p>
+          </div>
+          <div className='candidates_meta'>
+            <div className='candidates_meta-card'>
+              <span className='candidates_meta-label'>Rule</span>
+              <strong>One vote per election</strong>
+            </div>
+            <div className='candidates_meta-card'>
+              <span className='candidates_meta-label'>Security</span>
+              <strong>Verified voter access</strong>
+            </div>
+            <div className='candidates_meta-card'>
+              <span className='candidates_meta-label'>Results</span>
+              <strong>Published at close</strong>
+            </div>
+          </div>
         </header>
 
         <div className='container candidates_container'>

@@ -1,0 +1,88 @@
+Security Changes Report
+=======================
+
+Overview
+--------
+This document explains the security-related changes I applied in this repo.
+The focus was to reduce secret leakage risk, harden authentication flows,
+enforce CSRF protection end-to-end, and tighten file upload validation.
+
+Files Updated
+-------------
+- .gitignore
+- server/.env.example
+- server/controllers/voterController.js
+- server/middleware/csrfMiddleware.js
+- client/src/utils/apiSimulator.js
+- server/utils/fileStorage.js
+
+Detailed Changes
+----------------
+1) Repo secret hygiene (.gitignore, server/.env.example)
+   - Added a root .gitignore to block committing:
+     - .env and .env.* (secrets)
+     - node_modules (dependencies)
+     - server/uploads (user-generated files)
+     - client/build (compiled assets)
+   - Added server/.env.example with a template of all required env vars.
+   - Security impact:
+     - Reduces chance of leaking database credentials, JWT secrets, and SMTP keys.
+   - Follow-up required:
+     - Rotate any secrets already stored in server/.env and remove them from git history
+       if they were ever committed.
+
+2) Admin access hardening (server/controllers/voterController.js)
+   - Removed the hard-coded fallback admin email.
+   - Admin is now granted only if the email exists in ADMIN_EMAILS.
+   - Security impact:
+     - Prevents unintended admin access when env vars are missing.
+   - Operational note:
+     - ADMIN_EMAILS must be set in server/.env to grant admin privileges.
+
+3) CSRF protection end-to-end (server/middleware/csrfMiddleware.js,
+   client/src/utils/apiSimulator.js)
+   Server:
+   - CSRF cookie now sets the Secure flag when NODE_ENV=production.
+   - This prevents CSRF token leakage on non-HTTPS connections in production.
+   Client:
+   - Added CSRF token retrieval and caching.
+   - All state-changing requests (POST/PUT/PATCH/DELETE) now include the
+     x-csrf-token header.
+   - fetch uses credentials: include to send cookies.
+   Security impact:
+     - CSRF middleware is now functional for all client API calls.
+   Operational note:
+     - Ensure HTTPS is used in production so the Secure cookie is accepted.
+
+4) File upload hardening (server/utils/fileStorage.js)
+   - Disabled SVG uploads to avoid stored XSS vectors.
+   - Enforced a 5MB max image size.
+   - Validated files using magic-byte detection (not just mimetype or extension).
+   - Restricted acceptable extensions to jpg/jpeg/png/webp/avif.
+   - Rejected unsafe image URLs (only relative or http/https allowed).
+   Security impact:
+     - Reduces XSS risks and prevents disguised or oversized uploads.
+   Behavior impact:
+     - SVG files will now be rejected.
+
+5) Login enumeration reduction (server/controllers/voterController.js)
+   - Login now returns a generic "Invalid email or password" for both
+     missing users and wrong passwords.
+   - Security impact:
+     - Prevents attackers from probing which emails exist.
+
+Notes and Remaining Risks
+-------------------------
+- Auth token storage is still in localStorage, which is vulnerable to XSS.
+  If you want, I can migrate to httpOnly cookies.
+- Secrets in server/.env should be rotated since they were previously visible
+  in this repo.
+- If you need CSRF on additional API consumers (e.g., mobile apps), they must
+  also include the CSRF token on write requests.
+
+Suggested Verification
+----------------------
+- Register/login flow still works and OTP still verifies.
+- State-changing requests (create election, add candidate, vote) succeed without
+  CSRF errors.
+- Upload a JPG/PNG and confirm it works; upload SVG and confirm it is rejected.

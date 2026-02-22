@@ -12,6 +12,15 @@ const UpdateElectionModal = ({ onClose, onElectionUpdated, electionData }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const formatFileSize = (bytes) => {
+    if (typeof bytes !== 'number') return '';
+    if (bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    const mb = kb / 1024;
+    return `${mb.toFixed(1)} MB`;
+  };
+
   // Helper to format ISO date string to datetime-local input format
   const formatToDateTimeLocal = (isoString) => {
     if (!isoString) return "";
@@ -24,8 +33,8 @@ const UpdateElectionModal = ({ onClose, onElectionUpdated, electionData }) => {
     if (electionData) {
       setTitle(electionData.title || "");
       setDescription(electionData.description || "");
-      setStartDate(formatToDateTimeLocal(electionData.startDate));
-      setEndDate(formatToDateTimeLocal(electionData.endDate));
+      setStartDate(formatToDateTimeLocal(electionData.startTime || electionData.startDate));
+      setEndDate(formatToDateTimeLocal(electionData.endTime || electionData.endDate));
     }
   }, [electionData]);
 
@@ -51,12 +60,11 @@ const UpdateElectionModal = ({ onClose, onElectionUpdated, electionData }) => {
 
     const updatedData = {
       id: electionData.id,
-      title,
-      description,
-      startDate: start.toISOString(),
-      endDate: end.toISOString(),
-      // Only include thumbnail if a new one was selected
-      ...(thumbnail && { thumbnail: URL.createObjectURL(thumbnail) }),
+      title: title.trim(),
+      description: description.trim(),
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+      ...(thumbnail && { thumbnail }),
     };
 
     try {
@@ -65,7 +73,7 @@ const UpdateElectionModal = ({ onClose, onElectionUpdated, electionData }) => {
         onElectionUpdated(response.data);
         onClose();
       } else {
-        setError(response.message);
+        setError(response.message || "Failed to update election.");
       }
     } catch (err) {
       setError("Failed to update election.");
@@ -85,56 +93,92 @@ const UpdateElectionModal = ({ onClose, onElectionUpdated, electionData }) => {
         </header>
 
         <form onSubmit={handleSubmit} className={classes.modalForm}>
-          {error && <p style={{color: 'red', marginBottom: '1rem'}}>{error}</p>}
-          <div>
-            <h6>Election Title:</h6>
+          {error && <p className={classes.formError}>{error}</p>}
+          <div className={classes.fieldGroup}>
+            <label className={classes.fieldLabel} htmlFor="edit-election-title">
+              Election title
+            </label>
             <input
-              type='text'
+              id="edit-election-title"
+              type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={isLoading}
+              className={classes.fieldControl}
+              placeholder="Update the election title"
             />
           </div>
 
-          <div>
-            <h6>Description:</h6>
+          <div className={classes.fieldGroup}>
+            <label className={classes.fieldLabel} htmlFor="edit-election-description">
+              Description
+            </label>
             <textarea
+              id="edit-election-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={isLoading}
+              className={`${classes.fieldControl} ${classes.fieldTextarea}`}
+              placeholder="Update the election description"
             />
           </div>
 
-          <div>
-            <h6>Start Date & Time:</h6>
-            <input
-              type='datetime-local'
-              required
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              disabled={isLoading}
-            />
+          <div className={classes.fieldGroup}>
+            <span className={classes.fieldLabel}>Schedule</span>
+            <div className={classes.timeGrid}>
+              <label className={classes.timeCard} htmlFor="edit-election-start">
+                <span className={classes.timeBadge}>Start</span>
+                <input
+                  id="edit-election-start"
+                  type="datetime-local"
+                  required
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  disabled={isLoading}
+                  className={classes.timeInput}
+                />
+                <span className={classes.timeHint}>Local time</span>
+              </label>
+
+              <label className={classes.timeCard} htmlFor="edit-election-end">
+                <span className={classes.timeBadge}>End</span>
+                <input
+                  id="edit-election-end"
+                  type="datetime-local"
+                  required
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  disabled={isLoading}
+                  className={classes.timeInput}
+                />
+                <span className={classes.timeHint}>Local time</span>
+              </label>
+            </div>
           </div>
 
-          <div>
-            <h6>End Date & Time:</h6>
-            <input
-              type='datetime-local'
-              required
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-
-          <div>
-            <h6>Thumbnail (leave empty to keep current):</h6>
-            <input
-              type='file'
-              accept="image/*"
-              onChange={(e) => setThumbnail(e.target.files[0])}
-              disabled={isLoading}
-            />
+          <div className={classes.fieldGroup}>
+            <span className={classes.fieldLabel}>Thumbnail</span>
+            <label className={classes.fileDrop} htmlFor="edit-election-thumbnail">
+              <input
+                id="edit-election-thumbnail"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/avif"
+                onChange={(e) => setThumbnail(e.target.files?.[0] || null)}
+                disabled={isLoading}
+                className={classes.fileInput}
+              />
+              <div className={classes.fileDropContent}>
+                <span className={classes.fileDropTitle}>Replace election artwork</span>
+                <span className={classes.fileDropHint}>
+                  PNG, JPG, WEBP, or AVIF up to 5MB.
+                </span>
+              </div>
+              <div className={classes.fileMeta}>
+                {thumbnail
+                  ? `${thumbnail.name} (${formatFileSize(thumbnail.size)})`
+                  : 'No file selected'}
+              </div>
+            </label>
           </div>
 
           <div className={classes.modalFooter}>

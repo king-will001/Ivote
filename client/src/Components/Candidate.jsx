@@ -29,18 +29,7 @@ const Candidate = ({ image, id, fullName, motto, onVote }) => {
               style={{ opacity: imageLoaded ? 1 : 0 }}
             />
           ) : (
-            <div style={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'var(--color-gray-200)',
-              color: 'var(--color-gray-500)',
-              fontSize: '0.8rem',
-              textAlign: 'center',
-              padding: '1rem'
-            }}>
+            <div className="candidate_image-placeholder">
               <span>No Image</span>
             </div>
           )}

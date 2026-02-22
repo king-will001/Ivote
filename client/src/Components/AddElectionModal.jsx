@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { createElection } from '../utils/apiSimulator';
 import classes from './AddElectionModal.module.css'; // Import CSS module
@@ -9,8 +9,28 @@ const AddElectionModal = ({ onClose = () => {}, onElectionAdded = () => {} }) =>
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [thumbnail, setThumbnail] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const formatFileSize = (bytes) => {
+    if (typeof bytes !== 'number') return '';
+    if (bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    const mb = kb / 1024;
+    return `${mb.toFixed(1)} MB`;
+  };
+
+  useEffect(() => {
+    if (!thumbnail) {
+      setPreviewUrl('');
+      return undefined;
+    }
+    const url = URL.createObjectURL(thumbnail);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [thumbnail]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,11 +54,11 @@ const AddElectionModal = ({ onClose = () => {}, onElectionAdded = () => {} }) =>
     }
 
     const newElection = {
-      title,
-      description,
-      startDate: start.toISOString(),
-      endDate: end.toISOString(),
-      thumbnail: thumbnail ? URL.createObjectURL(thumbnail) : null,
+      title: title.trim(),
+      description: description.trim(),
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+      thumbnail,
     };
 
     try {
@@ -51,9 +71,10 @@ const AddElectionModal = ({ onClose = () => {}, onElectionAdded = () => {} }) =>
         setStartDate("");
         setEndDate("");
         setThumbnail(null);
+        setPreviewUrl('');
         onClose();
       } else {
-        setError(response.message);
+        setError(response.message || "Failed to create election.");
       }
     } catch (err) {
       setError("Failed to create election.");
@@ -73,59 +94,105 @@ const AddElectionModal = ({ onClose = () => {}, onElectionAdded = () => {} }) =>
         </header>
 
         <form onSubmit={handleSubmit} className={classes.modalForm}>
-          {error && <p style={{color: 'red', marginBottom: '1rem'}}>{error}</p>}
-          <div>
-            <h6>Election Title:</h6>
+          {error && <p className={classes.formError}>{error}</p>}
+          <div className={classes.fieldGroup}>
+            <label className={classes.fieldLabel} htmlFor="election-title">
+              Election title
+            </label>
             <input
-              type='text'
+              id="election-title"
+              type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={isLoading}
+              className={classes.fieldControl}
+              placeholder="e.g. 2026 Student Council Election"
             />
+            <span className={classes.fieldHint}>This appears on the public election card.</span>
           </div>
 
-          <div>
-            <h6>Description:</h6>
+          <div className={classes.fieldGroup}>
+            <label className={classes.fieldLabel} htmlFor="election-description">
+              Description
+            </label>
             <textarea
+              id="election-description"
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={isLoading}
+              className={`${classes.fieldControl} ${classes.fieldTextarea}`}
+              placeholder="Share the purpose and scope of this election."
             />
           </div>
 
-          <div>
-            <h6>Start Date & Time:</h6>
-            <input
-              type='datetime-local'
-              required
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          
-          <div>
-            <h6>End Date & Time:</h6>
-            <input
-              type='datetime-local'
-              required
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              disabled={isLoading}
-            />
+          <div className={classes.fieldGroup}>
+            <span className={classes.fieldLabel}>Schedule</span>
+            <div className={classes.timeGrid}>
+              <label className={classes.timeCard} htmlFor="election-start">
+                <span className={classes.timeBadge}>Start</span>
+                <input
+                  id="election-start"
+                  type="datetime-local"
+                  required
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  disabled={isLoading}
+                  className={classes.timeInput}
+                />
+                <span className={classes.timeHint}>Local time</span>
+              </label>
+
+              <label className={classes.timeCard} htmlFor="election-end">
+                <span className={classes.timeBadge}>End</span>
+                <input
+                  id="election-end"
+                  type="datetime-local"
+                  required
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  disabled={isLoading}
+                  className={classes.timeInput}
+                />
+                <span className={classes.timeHint}>Local time</span>
+              </label>
+            </div>
           </div>
 
-          <div>
-            <h6>Thumbnail:</h6>
-            <input
-              type='file'
-              accept="image/*"
-              required
-              onChange={(e) => setThumbnail(e.target.files[0])}
-              disabled={isLoading}
-            />
+          <div className={classes.fieldGroup}>
+            <span className={classes.fieldLabel}>Thumbnail</span>
+            <label className={classes.fileDrop} htmlFor="election-thumbnail">
+              <input
+                id="election-thumbnail"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/avif"
+                required
+                onChange={(e) => setThumbnail(e.target.files?.[0] || null)}
+                disabled={isLoading}
+                className={classes.fileInput}
+              />
+              <div className={classes.fileDropContent}>
+                <span className={classes.fileDropTitle}>Upload election artwork</span>
+                <span className={classes.fileDropHint}>
+                  PNG, JPG, WEBP, or AVIF up to 5MB.
+                </span>
+              </div>
+              <div className={classes.fileMeta}>
+                {thumbnail
+                  ? `${thumbnail.name} (${formatFileSize(thumbnail.size)})`
+                  : 'No file selected'}
+              </div>
+            </label>
+            {previewUrl && (
+              <div className={classes.preview}>
+                <img
+                  className={classes.previewImage}
+                  src={previewUrl}
+                  alt="Election preview"
+                />
+              </div>
+            )}
           </div>
 
           <div className={classes.modalFooter}>

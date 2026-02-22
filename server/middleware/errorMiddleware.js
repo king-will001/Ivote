@@ -1,25 +1,24 @@
+const HttpError = require('../models/ErrorModal');
+
 // unsupported/404 endpoints
-
 const notFound = (req, res, next) => {
-    const error = new Error(`not Found - ${req.originalUrl}`);
-    res.status(404);
-    next(error);
-}
+  next(new HttpError(`Not Found - ${req.originalUrl}`, 404));
+};
 
-
-
-// Error malddleware
+// Error middleware
 const errorHandler = (error, req, res, next) => {
-    if (res.headersSent) {
-        return next(error);
-    }
+  if (res.headersSent) {
+    return next(error);
+  }
 
-    res.status(error.code || 500).json({message: error.message || "An unknown error occurred!"});
-}
+  const fallbackStatus = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
+  const statusCode = error.code || error.status || fallbackStatus;
+  const message = error.message || 'An unknown error occurred!';
 
+  res.status(statusCode).json({ message });
+};
 
 module.exports = {
-    notFound,
-    errorHandler
-
-}
+  notFound,
+  errorHandler,
+};
