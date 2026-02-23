@@ -64,7 +64,7 @@ const Election = ({
     calculateTimeLeft();
 
     return () => clearInterval(interval);
-  }, [startDate, endDate]);
+  }, [startDate, endDate, startTime, endTime]);
   
   const openModal = () => {
     // Pass the election data to the Redux store
