@@ -68,9 +68,18 @@ const csrfProtection = (req, res, next) => {
   }
 
   const headerToken = req.headers[CSRF_HEADER_NAME];
-  if (!headerToken || headerToken !== token) {
+  const cookieToken = cookies[CSRF_COOKIE_NAME];
+  const tokenMatch = headerToken === token || (cookieToken && cookieToken === token);
+
+  if (!headerToken && !cookieToken) {
     return res.status(403).json({
       message: 'Missing or invalid CSRF token. Fetch /api/csrf first.',
+    });
+  }
+
+  if (!tokenMatch) {
+    return res.status(403).json({
+      message: 'Invalid CSRF token.',
     });
   }
 
