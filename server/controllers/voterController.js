@@ -28,6 +28,21 @@ const adminEmailList = (process.env.ADMIN_EMAILS || '')
   .filter(Boolean);
 
 const isAdminEmail = (email) => adminEmailList.includes(email);
+const isProduction = process.env.NODE_ENV === 'production';
+const bcryptRoundsEnv = Number(process.env.BCRYPT_SALT_ROUNDS);
+const BCRYPT_SALT_ROUNDS = Number.isFinite(bcryptRoundsEnv)
+  ? Math.max(8, Math.min(15, bcryptRoundsEnv))
+  : isProduction
+    ? 12
+    : 10;
+const otpEmailAsyncEnv = String(process.env.OTP_EMAIL_ASYNC || '').toLowerCase();
+const OTP_EMAIL_ASYNC =
+  otpEmailAsyncEnv === 'true' || (otpEmailAsyncEnv !== 'false' && !isProduction);
+
+const hashPassword = async (plainPassword) => {
+  const salt = await bcrypt.genSalt(BCRYPT_SALT_ROUNDS);
+  return bcrypt.hash(plainPassword, salt);
+};
 
 const formatVoterResponse = (voter) => ({
   id: voter._id,
@@ -66,11 +81,26 @@ const issueAuthSession = async (voter, res) => {
 };
 
 const deliverOtp = async ({ email, purpose, code, expiresAt }) => {
+  if (!isEmailConfigured) {
+    if (!isProduction) {
+      console.warn(`OTP delivery skipped (${purpose}) for ${email}: SMTP not configured`, code);
+      return false;
+    }
+    throw new Error('SMTP email service not configured');
+  }
+
+  if (OTP_EMAIL_ASYNC) {
+    sendOtpEmail({ to: email, code, purpose, expiresAt }).catch((error) => {
+      console.error(`OTP delivery failed (${purpose}) for ${email}:`, error?.message || error);
+    });
+    return true;
+  }
+
   try {
     await sendOtpEmail({ to: email, code, purpose, expiresAt });
     return true;
   } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
+    if (!isProduction) {
       console.warn(
         `OTP delivery skipped (${purpose}) for ${email}:`,
         error?.message || error,
@@ -86,13 +116,17 @@ const createAndSendOtp = async ({ email, purpose }) => {
   const otpCode = generateOtpCode();
   const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
 
-  await OtpModel.deleteMany({ email, purpose });
-  await OtpModel.create({
-    email,
-    purpose,
-    codeHash: hashOtp(otpCode),
-    expiresAt,
-  });
+  await OtpModel.findOneAndUpdate(
+    { email, purpose },
+    {
+      $set: {
+        codeHash: hashOtp(otpCode),
+        expiresAt,
+        attempts: 0,
+      },
+    },
+    { upsert: true, sort: { createdAt: -1 } }
+  );
 
   return deliverOtp({ email, purpose, code: otpCode, expiresAt });
 };
@@ -167,8 +201,7 @@ const registerVoter = async (req, res, next) => {
     const normalizedEmail = value.email.toLowerCase();
     const existingVoter = await VoterModel.findOne({ email: normalizedEmail }).select('+password');
 
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(value.password, salt);
+    const hashedPassword = await hashPassword(value.password);
     const adminFlag = isAdminEmail(normalizedEmail);
 
     if (existingVoter) {
@@ -498,8 +531,7 @@ const resetPassword = async (req, res, next) => {
       return next(new HttpError('Voter not found', 404));
     }
 
-    const salt = await bcrypt.genSalt(12);
-    voter.password = await bcrypt.hash(password, salt);
+    voter.password = await hashPassword(password);
     await voter.save();
     await VoterModel.findByIdAndUpdate(voter._id, {
       $unset: {
@@ -648,8 +680,7 @@ const changePassword = async (req, res, next) => {
       return next(new HttpError('Current password is incorrect', 422));
     }
 
-    const salt = await bcrypt.genSalt(12);
-    voter.password = await bcrypt.hash(value.newPassword, salt);
+    voter.password = await hashPassword(value.newPassword);
     await voter.save();
 
     await VoterModel.findByIdAndUpdate(voterId, {

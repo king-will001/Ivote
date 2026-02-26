@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-const { connect } = require('mongoose');
+const mongoose = require('mongoose');
+const { connect } = mongoose;
 const helmet = require('helmet');
 const fileUpload = require('express-fileupload');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -100,12 +101,60 @@ const mongoOptions = {
   ...(forceIpv4 ? { family: 4 } : {}),
 };
 
-connect(process.env.MONGO_URL, mongoOptions)
-  .then(() => {
-    console.log('MongoDB connected');
-    app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
-  })
-  .catch((error) => {
-    console.error('MongoDB connection error:', error.message || error);
-    process.exit(1);
-  });
+const parseOptionalNumber = (value) => {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    return Number.NaN;
+  }
+  return Number(value);
+};
+
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const retryDelayEnv = parseOptionalNumber(process.env.MONGO_RETRY_DELAY_MS);
+const retryDelayMs =
+  Number.isFinite(retryDelayEnv) && retryDelayEnv >= 0 ? retryDelayEnv : 5000;
+const retryLimitEnv = parseOptionalNumber(process.env.MONGO_RETRY_ATTEMPTS);
+const retryLimit = Number.isFinite(retryLimitEnv)
+  ? Math.max(0, retryLimitEnv)
+  : NODE_ENV === 'production'
+    ? 10
+    : Number.POSITIVE_INFINITY;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const connectMongoWithRetry = async () => {
+  let attempt = 0;
+
+  while (true) {
+    attempt += 1;
+    try {
+      await connect(process.env.MONGO_URL, mongoOptions);
+      console.log(`MongoDB connected (attempt ${attempt})`);
+      app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+      return;
+    } catch (error) {
+      const message = error?.message || String(error);
+      console.error(`MongoDB connection error (attempt ${attempt}):`, message);
+      if (/whitelist|IP address|network access/i.test(message)) {
+        console.error(
+          'Atlas network access may be blocking this IP. Check Network Access in MongoDB Atlas.'
+        );
+      }
+
+      const retriesUsed = attempt - 1;
+      const hasRetriesLeft =
+        !Number.isFinite(retryLimit) || retriesUsed < retryLimit;
+      if (!hasRetriesLeft) {
+        process.exit(1);
+      }
+
+      console.warn(`Retrying MongoDB connection in ${retryDelayMs}ms...`);
+      await sleep(retryDelayMs);
+    }
+  }
+};
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('MongoDB disconnected');
+});
+
+connectMongoWithRetry();

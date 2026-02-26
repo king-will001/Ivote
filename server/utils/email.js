@@ -10,6 +10,9 @@ const {
 } = process.env;
 
 const isSmtpConfigured = Boolean(SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS);
+const smtpConnectionTimeoutMs = Number(process.env.SMTP_CONNECTION_TIMEOUT_MS) || 8000;
+const smtpGreetingTimeoutMs = Number(process.env.SMTP_GREETING_TIMEOUT_MS) || 5000;
+const smtpSocketTimeoutMs = Number(process.env.SMTP_SOCKET_TIMEOUT_MS) || 10000;
 
 const transporter = isSmtpConfigured
   ? nodemailer.createTransport({
@@ -20,6 +23,9 @@ const transporter = isSmtpConfigured
         user: SMTP_USER,
         pass: SMTP_PASS,
       },
+      connectionTimeout: smtpConnectionTimeoutMs,
+      greetingTimeout: smtpGreetingTimeoutMs,
+      socketTimeout: smtpSocketTimeoutMs,
     })
   : null;
 

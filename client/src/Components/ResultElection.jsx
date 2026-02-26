@@ -39,6 +39,46 @@ const ResultElection = ({
     return [...candidates].sort((a, b) => b.voteCount - a.voteCount);
   }, [candidates, canShowResults]);
 
+  const topCandidates = useMemo(() => {
+    if (!canShowResults || sortedCandidates.length === 0) return [];
+    const topVoteCount = Number(sortedCandidates[0]?.voteCount) || 0;
+    if (topVoteCount <= 0) return [];
+    return sortedCandidates.filter(
+      (candidate) => (Number(candidate?.voteCount) || 0) === topVoteCount
+    );
+  }, [canShowResults, sortedCandidates]);
+
+  const topCandidateIds = useMemo(
+    () => new Set(topCandidates.map((candidate) => String(candidate.id))),
+    [topCandidates]
+  );
+
+  const hasTopTie = topCandidates.length > 1;
+  const topBadgeLabel = resolvedClosed
+    ? hasTopTie
+      ? 'Tied winner'
+      : 'Winner'
+    : hasTopTie
+      ? 'Tied lead'
+      : 'Leader';
+
+  const winnerSummary = useMemo(() => {
+    if (!canShowResults) return '';
+    if (topCandidates.length === 0) {
+      return resolvedClosed ? 'No winner yet. No votes recorded.' : 'No leader yet.';
+    }
+
+    const topNames = topCandidates
+      .map((candidate) => candidate?.fullName || 'Unknown candidate')
+      .join(', ');
+
+    if (resolvedClosed) {
+      return hasTopTie ? `Tied winners: ${topNames}` : `Winner: ${topNames}`;
+    }
+
+    return hasTopTie ? `Current tie: ${topNames}` : `Current leader: ${topNames}`;
+  }, [canShowResults, topCandidates, resolvedClosed, hasTopTie]);
+
   const badgeClass = resolvedClosed
     ? 'result_badge result_badge--final'
     : showProgress
@@ -46,15 +86,13 @@ const ResultElection = ({
       : 'result_badge result_badge--pending';
   const badgeLabel = resolvedClosed ? 'Final' : showProgress ? 'Live' : 'Locked';
   const endLabel = formatDate(endTime);
-  const resolvedTotalVotes = Number.isFinite(Number(totalVotes))
-    ? Number(totalVotes)
-    : 0;
+  const resolvedTotalVotes = Number.isFinite(Number(totalVotes)) ? Number(totalVotes) : 0;
 
   const metaLabel = resolvedClosed
     ? `Total votes: ${resolvedTotalVotes}`
     : showProgress
-      ? `Live tally (admin) · Total votes: ${resolvedTotalVotes} · Ends: ${endLabel}`
-      : `Live total votes: ${resolvedTotalVotes} · Results unlock at: ${endLabel}`;
+      ? `Live tally (admin) | Total votes: ${resolvedTotalVotes} | Ends: ${endLabel}`
+      : `Live total votes: ${resolvedTotalVotes} | Results unlock at: ${endLabel}`;
 
   const notifyShare = (message) => {
     setShareNote(message);
@@ -79,9 +117,13 @@ const ResultElection = ({
     }
     const origin = window.location?.origin || '';
     const shareUrl = `${origin}/results/${id}`;
-    const topCandidate = sortedCandidates[0]?.fullName;
-    const shareText = topCandidate
-      ? `Final results for ${title}. Winner: ${topCandidate}. Total votes: ${totalVotes}.`
+    const topCandidateNames = topCandidates
+      .map((candidate) => candidate?.fullName || 'Unknown candidate')
+      .join(', ');
+    const shareText = topCandidateNames
+      ? hasTopTie
+        ? `Final results for ${title}. Tied winners: ${topCandidateNames}. Total votes: ${totalVotes}.`
+        : `Final results for ${title}. Winner: ${topCandidateNames}. Total votes: ${totalVotes}.`
       : `Final results for ${title}. Total votes: ${totalVotes}.`;
 
     try {
@@ -108,13 +150,14 @@ const ResultElection = ({
   return (
     <article className='result'>
       <header className='result_header'>
-        <div className="result_header-copy">
+        <div className='result_header-copy'>
           <span className={badgeClass}>{badgeLabel}</span>
           <h4>{title}</h4>
-          <p className="result_meta">{metaLabel}</p>
+          <p className='result_meta'>{metaLabel}</p>
+          {winnerSummary && <p className='result_winner'>{winnerSummary}</p>}
         </div>
         <div className='result_header-image'>
-          <img src={thumbnail} alt={title} loading="lazy" decoding="async" />
+          <img src={thumbnail} alt={title} loading='lazy' decoding='async' />
         </div>
       </header>
 
@@ -124,7 +167,13 @@ const ResultElection = ({
             <li className='result_empty'>No candidates found.</li>
           ) : (
             sortedCandidates.map((candidate) => (
-              <CandidateRating key={candidate.id} {...candidate} totalVotes={totalVotes} />
+              <CandidateRating
+                key={candidate.id}
+                {...candidate}
+                totalVotes={totalVotes}
+                isWinner={topCandidateIds.has(String(candidate.id))}
+                badgeLabel={topBadgeLabel}
+              />
             ))
           )}
         </ul>

@@ -204,7 +204,7 @@ select:focus-visible {
   animation: gradientShift 20s ease infinite;
   border-radius: var(--radius-4);
   box-shadow: 0 26px 60px rgba(8, 18, 32, 0.38);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  
   gap: 1.2rem;
   flex-wrap: wrap;
   color: #fff;
@@ -2392,6 +2392,13 @@ nav {
   font-size: 0.95rem;
 }
 
+.result_winner {
+  margin-top: 0.35rem;
+  color: var(--color-success);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
 .result_header-image {
   width: 6.8rem;
   aspect-ratio: 1 / 1;
@@ -2658,6 +2665,10 @@ nav {
 .dark .result_meta,
 .dark .result_pending {
   color: var(--color-gray-500);
+}
+
+.dark .result_winner {
+  color: #4ade80;
 }
 
 .dark .result_header-image {

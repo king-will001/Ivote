@@ -75,6 +75,40 @@ const ResultsDetail = () => {
     if (!Array.isArray(result?.candidates)) return [];
     return [...result.candidates].sort((a, b) => b.voteCount - a.voteCount);
   }, [result?.candidates]);
+  const canShowResults = Boolean(result?.isClosed || result?.showProgress);
+  const topCandidates = useMemo(() => {
+    if (!canShowResults || sortedCandidates.length === 0) return [];
+    const topVoteCount = Number(sortedCandidates[0]?.voteCount) || 0;
+    if (topVoteCount <= 0) return [];
+    return sortedCandidates.filter(
+      (candidate) => (Number(candidate?.voteCount) || 0) === topVoteCount
+    );
+  }, [canShowResults, sortedCandidates]);
+  const topCandidateIds = useMemo(
+    () => new Set(topCandidates.map((candidate) => String(candidate.id))),
+    [topCandidates]
+  );
+  const hasTopTie = topCandidates.length > 1;
+  const topBadgeLabel = result?.isClosed
+    ? hasTopTie
+      ? 'Tied winner'
+      : 'Winner'
+    : hasTopTie
+      ? 'Tied lead'
+      : 'Leader';
+  const winnerSummary = useMemo(() => {
+    if (!canShowResults) return '';
+    if (topCandidates.length === 0) {
+      return result?.isClosed ? 'No winner yet. No votes recorded.' : 'No leader yet.';
+    }
+    const topNames = topCandidates
+      .map((candidate) => candidate?.fullName || 'Unknown candidate')
+      .join(', ');
+    if (result?.isClosed) {
+      return hasTopTie ? `Tied winners: ${topNames}` : `Winner: ${topNames}`;
+    }
+    return hasTopTie ? `Current tie: ${topNames}` : `Current leader: ${topNames}`;
+  }, [canShowResults, topCandidates, result?.isClosed, hasTopTie]);
 
   const totalVotes = Number.isFinite(Number(result?.totalVotes))
     ? Number(result.totalVotes)
@@ -83,7 +117,6 @@ const ResultsDetail = () => {
     typeof result?.candidateCount === 'number'
       ? result.candidateCount
       : sortedCandidates.length;
-  const canShowResults = Boolean(result?.isClosed || result?.showProgress);
   const badgeClass = result?.isClosed
     ? 'result_badge result_badge--final'
     : result?.showProgress
@@ -121,10 +154,18 @@ const ResultsDetail = () => {
 
     const origin = typeof window !== 'undefined' ? window.location?.origin || '' : '';
     const shareUrl = `${origin}/results/${id}`;
-    const topCandidate = sortedCandidates[0]?.fullName;
+    const topNames = topCandidates
+      .map((candidate) => candidate?.fullName || 'Unknown candidate')
+      .join(', ');
     const shareText = canShowResults
-      ? topCandidate
-        ? `Results for ${result?.title}. Leader: ${topCandidate}. Total votes: ${totalVotes}.`
+      ? topNames
+        ? result?.isClosed
+          ? hasTopTie
+            ? `Results for ${result?.title}. Tied winners: ${topNames}. Total votes: ${totalVotes}.`
+            : `Results for ${result?.title}. Winner: ${topNames}. Total votes: ${totalVotes}.`
+          : hasTopTie
+            ? `Results for ${result?.title}. Current tie: ${topNames}. Total votes: ${totalVotes}.`
+            : `Results for ${result?.title}. Current leader: ${topNames}. Total votes: ${totalVotes}.`
         : `Results for ${result?.title}. Total votes: ${totalVotes}.`
       : `Results for ${result?.title}. Voting ends at ${endLabel}.`;
 
@@ -179,8 +220,6 @@ const ResultsDetail = () => {
     );
   }
 
-  const winnerId = sortedCandidates[0]?.id;
-
   return (
     <section className='results_detail'>
       <div className='container results_detail_shell'>
@@ -234,6 +273,7 @@ const ResultsDetail = () => {
               <span className={badgeClass}>{badgeLabel}</span>
               <h4>{result.title}</h4>
               <p className='result_meta'>{metaLabel}</p>
+              {winnerSummary && <p className='result_winner'>{winnerSummary}</p>}
             </div>
             <div className='result_header-image'>
               <img src={result.thumbnail} alt={result.title} loading='lazy' />
@@ -250,7 +290,8 @@ const ResultsDetail = () => {
                     key={candidate.id}
                     {...candidate}
                     totalVotes={totalVotes}
-                    isWinner={candidate.id === winnerId}
+                    isWinner={topCandidateIds.has(String(candidate.id))}
+                    badgeLabel={topBadgeLabel}
                   />
                 ))
               )}
