@@ -55,13 +55,20 @@ const fetchCsrfToken = async () => {
 };
 
 const ensureCsrfToken = async () => {
-  if (csrfTokenCache) return csrfTokenCache;
+  if (csrfTokenCache) {
+    console.log('Using cached CSRF token');
+    return csrfTokenCache;
+  }
   const cookieToken = getCookieValue('csrf-token');
   if (cookieToken) {
+    console.log('Using CSRF token from cookie:', cookieToken.substring(0, 10) + '...');
     csrfTokenCache = cookieToken;
     return csrfTokenCache;
   }
-  return fetchCsrfToken();
+  console.log('Fetching CSRF token from server...');
+  const token = await fetchCsrfToken();
+  console.log('Fetched CSRF token:', token ? token.substring(0, 10) + '...' : 'null');
+  return token;
 };
 
 const isStateChangingMethod = (method) =>
