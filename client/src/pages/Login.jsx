@@ -230,6 +230,7 @@ const Login = () => {
                 type='email'
                 name='email'
                 placeholder='Email'
+                aria-label='Email address'
                 value={loginData.email}
                 onChange={changeInputHandler}
                 autoComplete='email'
@@ -241,6 +242,7 @@ const Login = () => {
                   type='password'
                   name='password'
                   placeholder='Enter Password'
+                  aria-label='Password'
                   value={loginData.password}
                   onChange={changeInputHandler}
                   autoComplete='current-password'
@@ -254,6 +256,7 @@ const Login = () => {
                     type='text'
                     name='otp'
                     placeholder='Enter OTP'
+                    aria-label='One-time verification code'
                     value={loginData.otp}
                     onChange={changeInputHandler}
                     autoComplete='one-time-code'

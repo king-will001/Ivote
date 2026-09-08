@@ -110,8 +110,10 @@ const NewsPost = ({
     return null;
   };
 
+  const classNames = `news_post${className ? ` ${className}` : ''}`;
+
   return (
-    <article className="news_post" aria-labelledby={headingId}>
+    <article className={classNames} aria-labelledby={headingId}>
       <div className="news_post-content">
         <div className="news_post-header">
           {category && (

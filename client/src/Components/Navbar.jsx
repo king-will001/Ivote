@@ -50,7 +50,7 @@ const Navbar = () => {
   }, [user]);
 
   return (
-    <nav>
+    <nav aria-label='Main navigation'>
       <div className="container nav_container">
         <Link to="/elections" className='nav_logo' onClick={closeNavManu}>IvoTe</Link>
         <div className="nav_right">
@@ -98,11 +98,11 @@ const Navbar = () => {
             </div>
           )}
 
-          <button className="theme_toggle-btn" onClick={changeThemeHandler}>
+          <button className="theme_toggle-btn" onClick={changeThemeHandler} aria-label={darkTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
             {darkTheme === 'dark' ? <IoMdSunny size={20} color="gold" /> : <IoIosMoon size={20} />}
           </button>
 
-          <button className="nav_toggle-btn" onClick={() => setShowNav(!showNav)}>
+          <button className="nav_toggle-btn" onClick={() => setShowNav(!showNav)} aria-label={showNav ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={showNav}>
             {showNav ? <AiOutlineClose /> : <HiOutlineBars4 />}
           </button>
         </div>

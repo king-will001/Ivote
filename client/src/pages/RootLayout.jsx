@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
+import CookieConsent from '../Components/CookieConsent';
 import { authActions } from '../store/authSlice';
 import { clearAuth, loadAuth, saveAuth } from '../utils/authStorage';
 import { refreshSession } from '../utils/apiSimulator';
@@ -41,13 +42,23 @@ function RootLayout() {
     bootstrapSession();
   }, [dispatch]);
 
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [location.pathname]);
+
   return (
-    <div className="app_shell">
+    <div className='app_shell'>
+      {/* Skip navigation link for keyboard users */}
+      <a href='#main-content' className='skip-nav'>
+        Skip to main content
+      </a>
       {!shouldHideNavbar && <Navbar />}
-      <main className="app_content">
+      <main id='main-content' className='app_content' tabIndex={-1}>
         <Outlet />
       </main>
       <Footer />
+      <CookieConsent />
     </div>
   );
 }

@@ -217,6 +217,7 @@ const Registration = () => {
                   <input
                     type='text'
                     placeholder='First Name'
+                    aria-label='First name'
                     name='firstName'
                     value={userData.firstName}
                     onChange={changeInputHandler}
@@ -229,6 +230,7 @@ const Registration = () => {
                     type='text'
                     name='lastName'
                     placeholder='Last Name'
+                    aria-label='Last name'
                     value={userData.lastName}
                     onChange={changeInputHandler}
                     autoComplete='family-name'
@@ -239,6 +241,7 @@ const Registration = () => {
                     type='email'
                     name='email'
                     placeholder='Email'
+                    aria-label='Email address'
                     value={userData.email}
                     onChange={changeInputHandler}
                     autoComplete='email'
@@ -249,6 +252,7 @@ const Registration = () => {
                     type='password'
                     name='password'
                     placeholder='Enter Password'
+                    aria-label='Password'
                     value={userData.password}
                     onChange={changeInputHandler}
                     autoComplete='new-password'
@@ -259,6 +263,7 @@ const Registration = () => {
                     type='password'
                     name='password2'
                     placeholder='Confirm Password'
+                    aria-label='Confirm password'
                     value={userData.password2}
                     onChange={changeInputHandler}
                     autoComplete='new-password'
@@ -277,6 +282,7 @@ const Registration = () => {
                     type='text'
                     name='otp'
                     placeholder='Enter OTP'
+                    aria-label='One-time verification code'
                     value={userData.otp}
                     onChange={changeInputHandler}
                     autoComplete='one-time-code'

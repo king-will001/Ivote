@@ -105,6 +105,13 @@
   z-index: 1;
 }
 
+.footer_image_notice {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 0.3rem;
+  line-height: 1.5;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .footer_container {

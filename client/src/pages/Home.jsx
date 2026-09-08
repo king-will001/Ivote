@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { fetchNews } from '../utils/apiSimulator';
 import NewsPost from '../Components/NewsPost';
@@ -10,6 +10,39 @@ const Home = () => {
   const [error, setError] = useState(null);
   const user = useSelector((state) => state.auth?.user);
   const [showAddModal, setShowAddModal] = useState(false);
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    const boundReveal = () => {
+      if (contentRef.current) {
+        const targets = [...contentRef.current.querySelectorAll('.reveal')];
+        const windowBottom = window.innerHeight + 40;
+        targets.forEach((node) => {
+          if (node.getBoundingClientRect().top < windowBottom) {
+            node.classList.add('is-visible');
+          }
+        });
+      }
+    };
+
+    boundReveal();
+    let revealed = new WeakSet();
+    const onScroll = () => {
+      const targets = contentRef.current ? [...contentRef.current.querySelectorAll('.reveal:not(.is-visible)')] : [];
+      if (targets.length === 0) {
+        window.removeEventListener('scroll', onScroll, { passive: true });
+        return;
+      }
+      boundReveal();
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', onScroll, { passive: true });
+      window.removeEventListener('resize', onScroll, { passive: true });
+    };
+  }, []);
 
   useEffect(() => {
     loadNews();
@@ -59,7 +92,7 @@ const Home = () => {
 
   return (
     <main className="container">
-      <section className="news_header">
+      <section className="news_header entrance-up">
         <div className="news_header-content">
           <span className="news_kicker">IVote Dispatch</span>
           <h1>News & Updates</h1>
@@ -113,9 +146,13 @@ const Home = () => {
           )}
         </div>
       ) : (
-        <div className="news_grid">
-          {news.map((post) => (
-            <NewsPost key={post.id} {...post} />
+        <div className="news_grid" ref={contentRef}>
+          {news.map((post, index) => (
+            <NewsPost
+              key={post.id}
+              {...post}
+              className={`reveal reveal-delay-${Math.min(index, 5)}`}
+            />
           ))}
         </div>
       )}

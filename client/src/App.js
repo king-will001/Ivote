@@ -14,6 +14,8 @@ import Logout from './pages/Logout';
 import Candidates from './pages/Candidates';
 import About from './pages/About';
 import ForgotPassword from './pages/ForgotPassword';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 import { RequireAuth } from './Components/RouteGuard';
 
 const router = createBrowserRouter([
@@ -69,6 +71,8 @@ const router = createBrowserRouter([
         ),
       },
       { path: "about", element: <About /> },
+      { path: "privacy", element: <Privacy /> },
+      { path: "terms", element: <Terms /> },
       { path: "login", element: <Login /> }
     ],
   },

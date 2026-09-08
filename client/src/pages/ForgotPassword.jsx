@@ -235,6 +235,7 @@ const ForgotPassword = () => {
                   type='email'
                   name='email'
                   placeholder='Email'
+                  aria-label='Email address'
                   value={formData.email}
                   onChange={changeInputHandler}
                   autoComplete='email'
@@ -247,6 +248,7 @@ const ForgotPassword = () => {
                       type='text'
                       name='otp'
                       placeholder='Enter OTP'
+                      aria-label='One-time verification code'
                       value={formData.otp}
                       onChange={changeInputHandler}
                       autoComplete='one-time-code'
@@ -256,6 +258,7 @@ const ForgotPassword = () => {
                       type='password'
                       name='password'
                       placeholder='New password'
+                      aria-label='New password'
                       value={formData.password}
                       onChange={changeInputHandler}
                       autoComplete='new-password'
@@ -265,6 +268,7 @@ const ForgotPassword = () => {
                       type='password'
                       name='passwordConfirm'
                       placeholder='Confirm new password'
+                      aria-label='Confirm new password'
                       value={formData.passwordConfirm}
                       onChange={changeInputHandler}
                       autoComplete='new-password'
